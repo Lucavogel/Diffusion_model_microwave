@@ -1,0 +1,17 @@
+data/
+mujoco/models/vendor/
+ros2_WS/build/
+ros2_WS/install/
+ros2_WS/log/
+ros2_WS/src/Universal_Robots_ROS2_Driver/
+ros2_WS/src/Universal_Robots_ROS2_Description/
+# Fichiers Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environnements virtuels
+.env
+.venv
+env/
+venv/

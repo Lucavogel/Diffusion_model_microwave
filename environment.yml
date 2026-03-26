@@ -1,0 +1,23 @@
+name: projet_stage_lirmm      # Le nom de la "bulle" Conda
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+  - defaults
+
+dependencies:
+  # 1. Les bases (via Conda)
+  - python=3.10
+  - pip
+  - numpy<2.0               # Isaac Sim préfère l'ancienne version de numpy
+  - pytorch
+  - torchvision
+  - pytorch-cuda=12.1       # Pour que PyTorch parle à la carte graphique
+
+  # 2. Les bibliothèques spécifiques (via Pip)
+  - pip:
+    - --extra-index-url https://pypi.nvidia.com
+    - isaacsim==4.5.0.0     # Ton simulateur 3D
+    - zarr                  # Pour sauvegarder les démonstrations de l'IA
+    - wandb                 # Pour tracer les jolies courbes d'entraînement
+    - hydra-core            # Pour lire tes autres fichiers YAML !

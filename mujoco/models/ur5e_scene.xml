@@ -1,0 +1,3 @@
+<mujoco model="ur5e_scene">
+  <include file="vendor/mujoco_menagerie/universal_robots_ur5e/scene.xml"/>
+</mujoco>

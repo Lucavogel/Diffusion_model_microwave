@@ -1,0 +1,42 @@
+name: e_waste_image
+
+image_shape: [3, 240, 320]
+dataset_path: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/data/datasets/e_waste
+
+shape_meta: &shape_meta
+  obs:
+    camera_0:
+      shape: ${task.image_shape}
+      type: rgb
+    camera_1:
+      shape: ${task.image_shape}
+      type: rgb
+    robot0_eef_pos:
+      shape: [3]
+      type: low_dim
+    robot0_eef_quat:
+      shape: [4]
+      type: low_dim
+    robot0_gripper_qpos:
+      shape: [1]
+      type: low_dim
+  action:
+    shape: [7]
+
+env_runner:
+  _target_: diffusion_policy.env_runner.real_pusht_image_runner.RealPushTImageRunner
+
+dataset:
+  _target_: diffusion_policy.dataset.real_pusht_image_dataset.RealPushTImageDataset
+  shape_meta: *shape_meta
+  dataset_path: ${task.dataset_path}
+  horizon: ${horizon}
+  pad_before: ${eval:'${n_obs_steps}-1+${n_latency_steps}'}
+  pad_after: ${eval:'${n_action_steps}-1'}
+  n_obs_steps: ${dataset_obs_steps}
+  n_latency_steps: ${n_latency_steps}
+  use_cache: True
+  seed: 42
+  val_ratio: 0.02
+  max_train_episodes: null
+  delta_action: False
