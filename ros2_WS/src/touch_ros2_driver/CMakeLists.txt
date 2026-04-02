@@ -22,12 +22,24 @@ include_directories(/home/luca/Master/openhaptics_3.4-0-developer-edition-amd64/
 # Chemin vers les librairies
 link_directories(/home/luca/Master/openhaptics_3.4-0-developer-edition-amd64/usr/lib)
 
+# Premier exécutable
 add_executable(touch_node src/touch_node.cpp)
 ament_target_dependencies(touch_node 
   rclcpp 
   geometry_msgs 
   std_msgs
   tf2
+  tf2_ros
+)
+
+# Deuxième exécutable (nom différent)
+add_executable(orientation_test_node src/orientation_test.cpp)
+ament_target_dependencies(orientation_test_node 
+  rclcpp 
+  geometry_msgs 
+  std_msgs
+  tf2
+  tf2_ros
 )
 
 
@@ -37,21 +49,26 @@ ament_target_dependencies(touch_node
 
 
 
-
-# Lien direct vers les fichiers trouvés dans ton terminal
 target_link_libraries(touch_node 
     /home/luca/Master/openhaptics_3.4-0-developer-edition-amd64/usr/lib/libHD.so
-  /home/luca/Master/openhaptics_3.4-0-developer-edition-amd64/usr/lib/libHL.so
+    /home/luca/Master/openhaptics_3.4-0-developer-edition-amd64/usr/lib/libHL.so
     /home/luca/Master/openhaptics_3.4-0-developer-edition-amd64/usr/lib/libHDU.a
     rt 
     pthread
 )
 
-# 5. INSTALLATION
-# Pour que la commande "ros2 run" puisse trouver ton programme
+# Faire la même chose pour le 2ème noeud
+target_link_libraries(orientation_test_node 
+    /home/luca/Master/openhaptics_3.4-0-developer-edition-amd64/usr/lib/libHD.so
+    /home/luca/Master/openhaptics_3.4-0-developer-edition-amd64/usr/lib/libHL.so
+    /home/luca/Master/openhaptics_3.4-0-developer-edition-amd64/usr/lib/libHDU.a
+    rt 
+    pthread
+)
+
 install(TARGETS
   touch_node
-
+  orientation_test_node # <-- Ajouté ici
   DESTINATION lib/${PROJECT_NAME}
 )
 

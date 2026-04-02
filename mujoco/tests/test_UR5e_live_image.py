@@ -15,8 +15,8 @@ data = mujoco.MjData(model)
 data.qpos[:6] = np.array([0.0, -1.2, 1.6, -1.2, -1.57, 0.0], dtype=float)
 
 # cube libre
-data.qpos[6:9] = np.array([0.77, 0.0, 0.485], dtype=float)
-data.qpos[9:13] = np.array([1.0, 0.0, 0.0, 0.0], dtype=float)
+data.qpos[12:15] = np.array([0.65, 0.0, 0.50], dtype=float)
+data.qpos[15:19] = np.array([1.0, 0.0, 0.0, 0.0], dtype=float)
 
 mujoco.mj_forward(model, data)
 

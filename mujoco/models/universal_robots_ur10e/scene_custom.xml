@@ -1,5 +1,5 @@
 <mujoco model="ur10e custom scene">
-  <include file="ur10e.xml"/>
+  <include file="ur10e_with_gripper.xml"/>
 
   <statistic center="0.5 0 0.55" extent="1.6"/>
 
@@ -48,18 +48,13 @@
       <geom name="leg3" type="box" pos="-0.33  0.23 -0.38" size="0.03 0.03 0.38" material="leg_mat"/>
       <geom name="leg4" type="box" pos="-0.33 -0.23 -0.38" size="0.03 0.03 0.38" material="leg_mat"/>
 
-      <geom name="workspace_area"
-            type="box"
-            pos="0 0 0.041"
-            size="0.18 0.14 0.001"
-            material="workspace_mat"
-            contype="0"
-            conaffinity="0"/>
+
     </body>
 
-    <body name="object_cube" pos="0.77 0.00 0.485">
-      <freejoint/>
-      <geom name="cube" type="box" size="0.025 0.025 0.025" mass="0.05" material="cube_mat"/>
+    <body name="object_cube" pos="0.70 0.0 0.50">
+      <freejoint name="object_cube_freejoint"/>
+      <!-- L'objet a maintenant une masse de 200g (0.2) et des contacts légèrement rendus "souples" pour la pince -->
+      <geom name="cube" type="box" size="0.025 0.025 0.025" mass="0.2" material="cube_mat" friction="1.5 0.005 0.0001" solimp="0.9 0.95 0.001 0.5 2" solref="0.01 1" condim="4" />
     </body>
   </worldbody>
 </mujoco>

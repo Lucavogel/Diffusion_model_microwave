@@ -5,6 +5,12 @@ ros2_WS/install/
 ros2_WS/log/
 ros2_WS/src/Universal_Robots_ROS2_Driver/
 ros2_WS/src/Universal_Robots_ROS2_Description/
+
+# Dossiers colcon à la racine (si générés par erreur)
+/build/
+/install/
+/log/
+
 # Fichiers Python
 __pycache__/
 *.py[cod]

@@ -1,0 +1,33 @@
+
+
+Commande Mujoco :
+
+source /opt/ros/humble/setup.zsh
+source ~/venvs/mujoco_ros/bin/activate
+cd /home/luca/Stage_Lirmm/Diffusion-model-isaacsim
+
+python mujoco//test_UR10e_touch.py
+
+pkill -f test_UR5e_free_cam.py
+
+
+terminal 1 :
+source /opt/ros/humble/setup.zsh
+source ~/venvs/mujoco_ros/bin/activate
+cd /home/luca/Stage_Lirmm/Diffusion-model-isaacsim
+python mujoco/teleop/test_UR10e_touch.py
+
+terminal 2 :
+source /opt/ros/humble/setup.zsh
+source ~/venvs/mujoco_ros/bin/activate
+cd /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ros2_WS
+colcon build
+source install/steup.zsh
+ros2 launch touch_ros2_driver touch_rviz.launch.py
+
+
+terminal 3 :
+source /opt/ros/humble/setup.zsh
+source ~/venvs/mujoco_ros/bin/activate
+cd /home/luca/Stage_Lirmm/Diffusion-model-isaacsim
+python mujoco/tests/test_UR10e_ik_follower.py 

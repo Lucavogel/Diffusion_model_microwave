@@ -6,6 +6,9 @@
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <std_msgs/msg/int8.hpp>
 #include <tf2/LinearMath/Quaternion.h>
+#include <tf2/LinearMath/Matrix3x3.h>
+#include <tf2_ros/transform_broadcaster.h>
+#include <geometry_msgs/msg/transform_stamped.hpp>
 
 #include <HD/hd.h>
 #include <HDU/hduError.h>
@@ -15,6 +18,7 @@ public:
     TouchNode() : Node("touch_node") {
         publisher_ = this->create_publisher<geometry_msgs::msg::PoseStamped>("/touch/pose", 10);
         button_publisher_ = this->create_publisher<std_msgs::msg::Int8>("/touch/buttons", 10);
+        tf_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(this);
 
         hHD_ = hdInitDevice(HD_DEFAULT_DEVICE);
         if (HD_DEVICE_ERROR(error_ = hdGetError())) {
@@ -36,8 +40,9 @@ public:
 
         scheduler_started_ = true;
 
+        // On réduit le délai à 5ms (soit 200 Hz au lieu de ~30 Hz à 33ms) pour tuer la latence
         timer_ = this->create_wall_timer(
-            std::chrono::milliseconds(33),
+            std::chrono::milliseconds(10),
             std::bind(&TouchNode::publish_pose, this)
         );
 
@@ -67,6 +72,7 @@ private:
         HDdouble position[3] = {0.0, 0.0, 0.0};
         HDdouble gimbal_angles[3] = {0.0, 0.0, 0.0};
         HDdouble joint_angles[3] = {0.0, 0.0, 0.0};
+        HDdouble transform[16] = {};
         HDErrorInfo error{};
         bool valid = false;
     };
@@ -88,6 +94,8 @@ private:
 
         self->servo_data_.error = hdGetError();
         self->servo_data_.valid = !HD_DEVICE_ERROR(self->servo_data_.error);
+
+        hdGetDoublev(HD_CURRENT_TRANSFORM, self->servo_data_.transform);
 
         hdEndFrame(hdGetCurrentDevice());
 
@@ -131,40 +139,81 @@ private:
             return;
         }
 
+                // colonne 0
+        double r00 = current_data.transform[0];
+        double r10 = current_data.transform[1];
+        double r20 = current_data.transform[2];
+
+        // colonne 1
+        double r01 = current_data.transform[4];
+        double r11 = current_data.transform[5];
+        double r21 = current_data.transform[6];
+
+        // colonne 2
+        double r02 = current_data.transform[8];
+        double r12 = current_data.transform[9];
+        double r22 = current_data.transform[10];
+
+        tf2::Matrix3x3 R_raw(
+            r00, r01, r02,
+            r10, r11, r12,
+            r20, r21, r22
+        );
+
+        // 1. Aligner les axes ! (Ton code avait la matrice identité ici)
+        // Position du code : X_ros = Z_touch, Y_ros = X_touch, Z_ros = Y_touch
+        tf2::Matrix3x3 R_mapping(
+            0, 0, 1,
+            1, 0, 0,
+            0, 1, 0
+        );
+
+        // 2. Transformer la rotation brute du Touch dans le monde ROS
+        tf2::Matrix3x3 R_base = R_mapping * R_raw;
+
+        // 3. Correction LOCALE du stylet (pour aligner l'axe rouge 'X' de RViz avec la pointe physique du stylet)
+        tf2::Matrix3x3 R_fix;
+        // La c'est "le tronc qui la où devrait être le stylo", donc on le retourne de 180 degres (PI) sur un autre axe (Z = yaw) !
+        // setRPY(Roll = axe X, Pitch = axe Y, Yaw = axe Z)
+        R_fix.setRPY(0.0, 1.57079632679, 3.14159265359); 
+
+        tf2::Matrix3x3 R_corrected = R_base * R_fix;
+
+        tf2::Quaternion q;
+        R_corrected.getRotation(q);
+        q.normalize();
+
         geometry_msgs::msg::PoseStamped msg;
         msg.header.stamp = this->get_clock()->now();
-        msg.header.frame_id = "touch_base";
+        msg.header.frame_id = "world"; // On met "world" pour que RViz puisse l'afficher sans erreur de TF
+
 
         // POSITION : on garde exactement ton mapping actuel
-        msg.pose.position.x = current_data.position[2] / -100.0;
-        msg.pose.position.y = current_data.position[0] / -100.0;
+        msg.pose.position.x = current_data.position[2] / 100.0;
+        msg.pose.position.y = current_data.position[0] / 100.0;
         msg.pose.position.z = current_data.position[1] / 100.0;
 
-        // =========================
-        // TEST ORIENTATION GIMBAL
-        // =========================
-        constexpr int GIMBAL_INDEX = 2;      // teste 0, puis 1, puis 2
-        constexpr double GIMBAL_SIGN = 1.0;  // teste aussi -1.0
-
-        const double angle = GIMBAL_SIGN * current_data.gimbal_angles[GIMBAL_INDEX];
-
-        tf2::Quaternion q_test;
-
-        // Test actuel : appliquer cet angle autour de Z
-        q_test.setRPY(0.0, 0.0, angle);
-
-        // Si Z n'est pas le bon axe, essaie à la place :
-        // q_test.setRPY(angle, 0.0, 0.0); // autour de X
-        // q_test.setRPY(0.0, angle, 0.0); // autour de Y
-
-        q_test.normalize();
-
-        msg.pose.orientation.w = q_test.w();
-        msg.pose.orientation.x = q_test.x();
-        msg.pose.orientation.y = q_test.y();
-        msg.pose.orientation.z = q_test.z();
+        // ORIENTATION
+        msg.pose.orientation.w = q.w();
+        msg.pose.orientation.x = q.x();
+        msg.pose.orientation.y = q.y();
+        msg.pose.orientation.z = q.z();
 
         publisher_->publish(msg);
+
+        // Publication TF pour le voir en live sous RViz
+        geometry_msgs::msg::TransformStamped t;
+        t.header.stamp = msg.header.stamp;
+        t.header.frame_id = "world";  // Frame global sous rviz
+        t.child_frame_id = "touch_cursor";
+        t.transform.translation.x = msg.pose.position.x;
+        t.transform.translation.y = msg.pose.position.y;
+        t.transform.translation.z = msg.pose.position.z;
+        t.transform.rotation = msg.pose.orientation;
+        
+        if (tf_broadcaster_) {
+            tf_broadcaster_->sendTransform(t);
+        }
 
         std_msgs::msg::Int8 button_msg;
         const bool b1 = (current_data.buttons & HD_DEVICE_BUTTON_1) != 0;
@@ -186,16 +235,14 @@ private:
             this->get_logger(),
             *this->get_clock(),
             1000,
-            "pos=[%.3f %.3f %.3f] gimbal=[%.3f %.3f %.3f] angle=%.3f idx=%d sign=%.1f",
+            "pos=[%.3f %.3f %.3f] gimbal=[%.3f %.3f %.3f]",
             msg.pose.position.x,
             msg.pose.position.y,
             msg.pose.position.z,
             current_data.gimbal_angles[0],
             current_data.gimbal_angles[1],
-            current_data.gimbal_angles[2],
-            angle,
-            GIMBAL_INDEX,
-            GIMBAL_SIGN
+            current_data.gimbal_angles[2]
+        
         );
     }
 
@@ -209,6 +256,7 @@ private:
     rclcpp::TimerBase::SharedPtr timer_;
     rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr publisher_;
     rclcpp::Publisher<std_msgs::msg::Int8>::SharedPtr button_publisher_;
+    std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
 };
 
 int main(int argc, char *argv[]) {
