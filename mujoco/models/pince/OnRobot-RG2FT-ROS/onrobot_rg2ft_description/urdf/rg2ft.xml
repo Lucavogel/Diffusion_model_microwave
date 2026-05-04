@@ -1,0 +1,53 @@
+<mujoco model="onrobot_rg2ft">
+  <compiler angle="radian"/>
+
+  <asset>
+    <mesh name="quick_changer" content_type="model/stl" file="quick_changer.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="gripper_body" content_type="model/stl" file="gripper_body.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="angle_bracket" content_type="model/stl" file="angle_bracket.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="left_inner_knuckle" content_type="model/stl" file="left_inner_knuckle.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="right_outer_knuckle" content_type="model/stl" file="right_outer_knuckle.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="left_outer_knuckle" content_type="model/stl" file="left_outer_knuckle.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="left_inner_finger" content_type="model/stl" file="left_inner_finger.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="right_inner_finger" content_type="model/stl" file="right_inner_finger.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="right_inner_knuckle" content_type="model/stl" file="right_inner_knuckle.stl" scale="0.001 0.001 0.001"/>
+  </asset>
+
+  <worldbody>
+    <body name="rg2ft_gripper">
+    <geom pos="0 0 0.1" quat="1 0 0 0" type="mesh" rgba="0.215686 0.592157 0.811765 1" mesh="quick_changer"/>
+    <geom pos="0 0 0.1" quat="1 0 0 0" type="mesh" rgba="0.7 0.7 0.7 1" mesh="angle_bracket"/>
+    <geom pos="0 0.000475769 0.100002" quat="0.999987 0.00506143 0 0" type="mesh" rgba="0.7 0.7 0.7 1" mesh="gripper_body"/>
+    <body name="left_inner_knuckle" pos="0.0075 -0.0103018 0.239297" quat="0.978496 0.00495266 0.206202 0.00104369">
+      <inertial pos="0.0176292 0.0104719 0.0170682" quat="0.92388 0 0.382683 0" mass="0.0243375" diaginertia="8e-06 7e-06 2e-06"/>
+      <joint name="left_inner_knuckle_joint" pos="0 0 0" axis="0 0.999949 -0.010122" range="-1.19 0.01" actuatorfrcrange="-50 50"/>
+      <geom pos="-0.0075 0.009367 -0.139397" quat="1 0 0 0" type="mesh" rgba="0.7 0.7 0.7 1" mesh="left_inner_knuckle"/>
+    </body>
+    <body name="right_outer_knuckle" pos="-0.017 -0.0103018 0.222798" quat="0.978496 0.00495266 -0.206202 -0.00104369">
+      <inertial pos="-0.0123122 0.0103697 0.0102038" quat="0 0.92388 0 0.382683" mass="0.0415837" diaginertia="1.7e-05 1.6e-05 3e-06"/>
+      <joint name="finger_joint" pos="0 0 0" axis="0 0.999949 -0.010122" range="0 1.18" actuatorfrcrange="-50 50"/>
+      <geom pos="0.017 0.009534 -0.122898" type="mesh" rgba="0.7 0.7 0.7 1" mesh="right_outer_knuckle"/>
+      <body name="right_inner_finger" pos="-0.039748 0.004784 0.037968" quat="0.978509 0 0.206204 0">
+        <inertial pos="0.0093413 0.00610854 0.0313368" quat="0.99159 0 0.129422 0" mass="0.0320387" diaginertia="9.53113e-06 9e-06 1.46887e-06"/>
+        <joint name="right_inner_finger_joint" pos="0 0 0" axis="0 0.999949 -0.010122" range="-1.19 0.01" actuatorfrcrange="-50 50"/>
+        <geom pos="0.056748 0.00475 -0.160866" type="mesh" rgba="0.7 0.7 0.7 1" mesh="right_inner_finger"/>
+      </body>
+    </body>
+    <body name="left_outer_knuckle" pos="0.017 -0.0103018 0.222798" quat="0.978496 0.00495266 0.206202 0.00104369">
+      <inertial pos="0.012312 0.0103697 0.0102038" quat="0.92388 0 0.382683 0" mass="0.0415837" diaginertia="1.7e-05 1.6e-05 3e-06"/>
+      <joint name="left_outer_knuckle_joint" pos="0 0 0" axis="0 0.999949 -0.010122" range="-1.19 0.01" actuatorfrcrange="-50 50"/>
+      <geom pos="-0.017 0.009534 -0.122898" type="mesh" rgba="0.7 0.7 0.7 1" mesh="left_outer_knuckle"/>
+      <body name="left_inner_finger" pos="0.039748 0.004784 0.037968" quat="0.978509 0 -0.206204 0">
+        <inertial pos="-0.00934148 0.00610854 0.0313368" quat="0.99159 0 -0.129422 0" mass="0.0320387" diaginertia="9.53113e-06 9e-06 1.46887e-06"/>
+        <joint name="left_inner_finger_joint" pos="0 0 0" axis="0 -0.999949 0.010122" range="-1.19 0.01" actuatorfrcrange="-50 50"/>
+        <geom pos="-0.056748 0.00475 -0.160866" type="mesh" rgba="0.7 0.7 0.7 1" mesh="left_inner_finger"/>
+      </body>
+    </body>
+    <body name="right_inner_knuckle" pos="-0.0075 -0.0103018 0.239297" quat="0.978496 0.00495266 -0.206202 -0.00104369">
+      <inertial pos="-0.0176293 0.0104719 0.0170682" quat="0 0.92388 0 0.382683" mass="0.0243375" diaginertia="8e-06 7e-06 2e-06"/>
+      <joint name="right_inner_knuckle_joint" pos="0 0 0" axis="0 0.999949 -0.010122" range="-0.01 1.19" actuatorfrcrange="-50 50"/>
+      <geom pos="0.0075 0.009367 -0.139397" quat="1 0 0 0" type="mesh" rgba="0.7 0.7 0.7 1" mesh="right_inner_knuckle"/>
+    </body>
+      </body>
+  </worldbody>
+</mujoco>
