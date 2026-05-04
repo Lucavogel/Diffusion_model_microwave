@@ -53,7 +53,7 @@ while True:
 
     # adapte selon ton orientation actuelle
     img_front = cv2.rotate(img_front, cv2.ROTATE_180)
-    img_top = cv2.rotate(img_top, cv2.ROTATE_180)
+    img_top = cv2.rotate(img_top, cv2.ROTATE_90_COUNTERCLOCKWISE)
 
     img_front = cv2.cvtColor(img_front, cv2.COLOR_RGB2BGR)
     img_top = cv2.cvtColor(img_top, cv2.COLOR_RGB2BGR)

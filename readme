@@ -130,8 +130,8 @@ export PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
 python train.py \
   --config-name=train_e_waste \
   task=e_waste_image \
-  task.dataset_path=/workspace/demo_data_20260421_154024.zarr \
-  training.num_epochs=1000 \
+  task.dataset_path=/workspace/demo_data_20260427_151232.zarr \
+  training.num_epochs=600 \
   training.resume=False \
   training.device=cuda:0 \
   logging.mode=disabled \
@@ -156,7 +156,7 @@ wandb status
 cd /workspace
 python train.py --config-name=train_e_waste \
   task=e_waste_image \
-  task.dataset_path=/workspace/data/datasets/demo_data_20260408_140712.zarr \
+  task.dataset_path=/workspace/data/datasets/demo_data_20260427_151232.zarr \
   training.device=cuda:0 \
   logging.mode=online \
   logging.resume=False
@@ -204,14 +204,17 @@ dans le serveur pas docker:
 ```zsh
 mkdir -p /auto/lvogelgesang/tmp_ckpt
 
-docker cp diffusion-model-gpu0:/workspace/data/outputs/2026.04.22/08.08.11_train_diffusion_unet_image_e_waste_image/checkpoints/epoch=0600-train_loss=0.005.ckpt /auto/lvogelgesang/tmp_ckpt/epoch=0600-train_loss=0.005.ckpt
+docker cp diffusion-model:/workspace/data/outputs/2026.04.29/06.53.35_train_diffusion_unet_image_e_waste_image/checkpoints/latest.ckpt /auto/lvogelgesang/tmp_ckpt/latest.ckpt
 ```
 dans le pc local:
 ```zsh
-rsync -avzP lvogelgesang@mic-gpu1:/auto/lvogelgesang/tmp_ckpt/epoch=0600-train_loss=0.005.ckpt \
+rsync -avzP lvogelgesang@mic-gpu1:/auto/lvogelgesang/tmp_ckpt/latest.ckpt \
   /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/data/checkpoints/
 
 
 netoyer :
 ssh lvogelgesang@mic-gpu1 'rm -rf /auto/lvogelgesang/tmp_ckpt'
 ```
+du -sh /workspace/data/outputs
+
+df -h

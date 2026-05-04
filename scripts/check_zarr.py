@@ -22,13 +22,13 @@ try:
         total_steps = episode_ends[-1] if num_episodes > 0 else 0
         
         print("\n" + "="*50)
-        print(f"📊 RAPPORT DU DATASET : {os.path.basename(zarr_path)}")
+        print(f"RAPPORT DU DATASET : {os.path.basename(zarr_path)}")
         print("="*50)
-        print(f"➡️ Nombre de trajectoires (épisodes) : {num_episodes}")
-        print(f"➡️ Nombre total de pas (steps)       : {total_steps}")
+        print(f"Nombre de trajectoires (épisodes) : {num_episodes}")
+        print(f"Nombre total de pas (steps)       : {total_steps}")
         print("-" * 50)
         
-        print("📷 Données enregistrées (shape) :")
+        print("Données enregistrées (shape) :")
         for key in root['data'].keys():
             shape = root['data'][key].shape
             dtype = root['data'][key].dtype

@@ -5,7 +5,7 @@ import mujoco
 
 MODEL_PATH = "/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/mujoco/models/universal_robots_ur10e/scene_microwave.xml"
 
-home_q = np.array([0.0, -1.3, 1.8, -0.22, 1.57, 0.0], dtype=float)
+home_q = np.array([0.0, -1.05, 1.50, -0.22, 1.6, 0.0], dtype=float)
 site_name = "grasp_site"
 
 model = mujoco.MjModel.from_xml_path(MODEL_PATH)

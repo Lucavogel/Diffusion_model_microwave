@@ -16,12 +16,15 @@ import mujoco.viewer
 import numpy as np
 import torch
 
+from scene_utils import randomize_microwave_objects, hide_free_body
 
 # ============================================================
 # Paths
 # ============================================================
 ROOT_DIR = Path(__file__).resolve().parents[2]
+
 DP_DIR = ROOT_DIR / "diffusion_policy"
+TELEOP_DIR = ROOT_DIR / "mujoco" / "teleop"
 if str(DP_DIR) not in sys.path:
     sys.path.insert(0, str(DP_DIR))
 
@@ -135,13 +138,8 @@ def orientation_error(R_target: np.ndarray, R_current: np.ndarray) -> np.ndarray
 # ============================================================
 # IO / Policy helpers
 # ============================================================
-def preprocess_rgb(img: np.ndarray, out_h: int, out_w: int) -> np.ndarray:
-    """
-    RGB uint8 HWC -> float32 CHW in [0,1]
-    """
-    img = cv2.resize(img, (out_w, out_h), interpolation=cv2.INTER_AREA)
-    img = np.moveaxis(img, -1, 0).astype(np.float32) / 255.0
-    return img
+def preprocess_rgb(img: np.ndarray) -> np.ndarray:
+    return np.moveaxis(img, -1, 0).astype(np.float32) / 255.0
 
 
 def load_policy(checkpoint_path: str, device: torch.device):
@@ -332,6 +330,8 @@ def main() -> None:
     # ========================================================
     # MuJoCo init
     # ========================================================
+    # randomisation des objets
+    
     model = mujoco.MjModel.from_xml_path(args.model_xml)
     data = mujoco.MjData(model)
 
@@ -344,6 +344,23 @@ def main() -> None:
     if model.nu > 6:
         data.ctrl[6] = -0.2
 
+    # randomisation des objets
+    randomize_microwave_objects(model, data)
+
+    # masquer éventuellement un objet (utiliser RNG local pour éviter la dépendance
+    # au seed global qui peut rendre le choix déterministe)
+    
+    mode = ["both", "rectangle_only", "transformer_only"][int(np.random.randint(0, 3))]
+    print(f"DEBUG: sampled visibility mode: {mode}")
+    if mode == "both":
+        pass
+    elif mode == "rectangle_only":
+        hide_free_body(model, data, "microwave_transformer")
+    elif mode == "transformer_only":
+        hide_free_body(model, data, "microwave_rectangle")
+
+    mujoco.mj_forward(model, data)
+
     # Joint limits
     joint_min = model.jnt_range[:6, 0].copy()
     joint_max = model.jnt_range[:6, 1].copy()
@@ -355,9 +372,12 @@ def main() -> None:
 
     mujoco.mj_forward(model, data)
 
-    # Renderers at observation resolution
-    renderer_agent = mujoco.Renderer(model, height=obs_h, width=obs_w)
-    renderer_wrist = mujoco.Renderer(model, height=obs_h, width=obs_w)
+    # Renderers: render at collection resolution (e.g. 640x480),
+    # then downsample to (obs_h, obs_w) in `preprocess_rgb` to match data collection.
+    RENDER_WIDTH = 640
+    RENDER_HEIGHT = 480
+    renderer_agent = mujoco.Renderer(model, height=RENDER_HEIGHT, width=RENDER_WIDTH)
+    renderer_wrist = mujoco.Renderer(model, height=RENDER_HEIGHT, width=RENDER_WIDTH)
 
     # ========================================================
     # Buffers / controller state
@@ -397,10 +417,15 @@ def main() -> None:
 
         img_agent = renderer_agent.render()
         img_wrist = renderer_wrist.render()
-
-        # même convention que pendant la collecte
-        img_agent = cv2.rotate(img_agent, cv2.ROTATE_180)
+        # même convention que pendant la collecte:
+        # render at 640x480, rotate, then downsample to 84x84 before preprocessing
+        img_agent = cv2.rotate(img_agent, cv2.ROTATE_90_COUNTERCLOCKWISE)
         img_wrist = cv2.rotate(img_wrist, cv2.ROTATE_180)
+
+        DATA_COLLECTION_H = 84
+        DATA_COLLECTION_W = 84
+        img_agent_84 = cv2.resize(img_agent, (DATA_COLLECTION_W, DATA_COLLECTION_H), interpolation=cv2.INTER_AREA)
+        img_wrist_84 = cv2.resize(img_wrist, (DATA_COLLECTION_W, DATA_COLLECTION_H), interpolation=cv2.INTER_AREA)
 
         eef_pos = data.site_xpos[grasp_site_id].copy().astype(np.float32)
         eef_quat = rot_to_quat(data.site_xmat[grasp_site_id].reshape(3, 3)).astype(np.float32)
@@ -409,11 +434,12 @@ def main() -> None:
             dtype=np.float32,
         )
 
-        obs_hist["agentview_image"].append(preprocess_rgb(img_agent, obs_h, obs_w))
-        obs_hist["robot0_eye_in_hand_image"].append(preprocess_rgb(img_wrist, obs_h, obs_w))
+        obs_hist["agentview_image"].append(preprocess_rgb(img_agent_84))
+        obs_hist["robot0_eye_in_hand_image"].append(preprocess_rgb(img_wrist_84))
         obs_hist["robot0_eef_pos"].append(eef_pos)
         obs_hist["robot0_eef_quat"].append(eef_quat)
         obs_hist["robot0_gripper_qpos"].append(gripper_qpos)
+
 
     def build_obs_tensor() -> Dict[str, torch.Tensor]:
         return {

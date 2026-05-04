@@ -27,7 +27,7 @@
     <material name="cube_mat" rgba="0.85 0.2 0.2 1"/>
     <material name="leg_mat" rgba="0.2 0.2 0.2 1"/>
 
-    <mesh name="microwave" file="micronde_bonne_mesure.obj" scale="0.01 0.01 0.01"/>
+    <mesh name="microwave" file="microwave_narrow.obj" scale="0.01 0.01 0.01"/>
   </asset>
 
   <worldbody>
@@ -36,21 +36,21 @@
     <geom name="floor" size="0 0 0.05" type="plane" material="groundplane"/>
 
     <camera name="front" pos="2.2 0 1.2" xyaxes="0 1 0 -0.45 0 1"/>
-    <camera name="top_table" pos="0.75 0 1.65" xyaxes="1 0 0 0 1 0"/>
+    <camera name="top_table" pos="0.75 0.03 1.80" xyaxes="1 0 0 0 1 0"/>
 
     <body name="robot_stand" pos="0 0 0.2">
       <geom name="stand" type="box" size="0.18 0.18 0.2" material="stand_mat"/>
     </body>
 
-    <body name="table" pos="1.2 0 0.51">
-      <geom name="table_top" type="box" size="0.45 0.60 0.02" material="table_mat"
+    <body name="table" pos="1.1 0 0.51">
+      <geom name="table_top" type="box" size="0.4 0.90 0.02" material="table_mat"
         friction="2.0 0.1 0.002" solimp="0.995 0.9999 0.0005" solref="0.001 1" condim="4"/>
 
 
-      <geom name="leg1" type="box" pos=" 0.52  0.55 -0.265" size="0.03 0.03 0.245" material="leg_mat"/>
-      <geom name="leg2" type="box" pos=" 0.52 -0.55 -0.265" size="0.03 0.03 0.245" material="leg_mat"/>
-      <geom name="leg3" type="box" pos="-0.52  0.55 -0.265" size="0.03 0.03 0.245" material="leg_mat"/>
-      <geom name="leg4" type="box" pos="-0.52 -0.55 -0.265" size="0.03 0.03 0.245" material="leg_mat"/>
+      <geom name="leg1" type="box" pos=" 0.37  0.87 -0.265" size="0.03 0.03 0.245" material="leg_mat"/>
+      <geom name="leg2" type="box" pos=" 0.37 -0.87 -0.265" size="0.03 0.03 0.245" material="leg_mat"/>
+      <geom name="leg3" type="box" pos="-0.37  0.87 -0.265" size="0.03 0.03 0.245" material="leg_mat"/>
+      <geom name="leg4" type="box" pos="-0.37 -0.87 -0.265" size="0.03 0.03 0.245" material="leg_mat"/>
     </body>
 
  
@@ -93,7 +93,7 @@
       <geom type="box" pos=" 0.16 0.49 -0.27" size="0.15 0.08 0.01"
             friction="2.0 0.1 0.002" rgba="1 0 0 0"/>
       <!-- haut -->
-      <geom type="box" pos=" 0.156 0.49 -0.058" size="0.151 0.08 0.05"
+      <geom type="box" pos=" 0.156 0.49 -0.071" size="0.151 0.08 0.07"
             friction="2.0 0.1 0.002" rgba="1 0 0 0"/>
 
         <!-- droite -->
@@ -105,8 +105,14 @@
         <!-- gauche -->
       <geom type="box" pos="0.305 0.49 -0.15" size="0.007 0.08 0.15"
             friction="2.0 0.1 0.002" rgba="1 0 0 0"/>
+      <!--
+      <site name="microwave_plastic_mount_site"
+          pos="-0.05 0.56 -0.12"
+          euler="0 0 0"
+          size="0.01"
+          rgba="0 1 0 1"/>
 
-
+      -->
       
     </body>
     
@@ -136,8 +142,50 @@
           solimp="0.995 0.9999 0.0005"
           solref="0.001 1"
           condim="4"/>
-    </body>
+    </body> 
+  <!-- 
+  <body name="plastic_cover" pos="0.85 -0.428 0.63" euler="0 0 0">
+      <freejoint/>
+      <geom type="box"
+            size="0.002 0.04 0.08"
+            rgba="0.8 0.8 0.9 1"
+            mass="0.02"
+            friction="2.0 0.1 0.002"
+            solimp="0.995 0.9999 0.0005"
+            solref="0.001 1"
+            condim="4"/>
+        <geom type="box"
+            size="0.04 0.04 0.002"
+            pos="-0.04 0.0 -0.08"
+            rgba="0.8 0.8 0.9 1"
+            mass="0.02"
+            friction="2.0 0.1 0.002"
+            solimp="0.995 0.9999 0.0005"
+            solref="0.001 1"
+            condim="4"/>
 
-    
+      <site name="plastic_mount_site"
+            pos="0 0 0"
+            size="0.005"
+            rgba="1 0 0 1"/>
+
+      <site name="plastic_force_site"
+            pos="0 0 0"
+            size="0.005"
+            rgba="0 0 1 1"/>
+  </body>
+  -->
   </worldbody>
+  <!-- 
+
+  <equality>
+    <weld name="plastic_weld"
+        site1="plastic_mount_site"
+        site2="microwave_plastic_mount_site"/>
+  </equality>
+
+  <sensor>
+    <force name="plastic_pull_force" site="plastic_force_site"/>
+  </sensor>
+-->
 </mujoco>

@@ -1,4 +1,4 @@
-name: e_waste_image
+name: e_waste_image_transformer
 
 image_shape: [3, 84, 84]
 dataset_path: /workspace/data/datasets/demo_data_20260427_151232.zarr
