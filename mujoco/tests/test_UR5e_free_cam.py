@@ -10,7 +10,7 @@ model = mujoco.MjModel.from_xml_path(str(MODEL_PATH))
 data = mujoco.MjData(model)
 
 # robot: définir la pose "home" et l'appliquer dès le départ
-HOME_QPOS = np.array([0.0, -1.05, 1.50, -0.22, 1.6, 0.0], dtype=float)
+HOME_QPOS = np.array([0.0, -1.4, 2.3, -0.82, 1.57, 0.0], dtype=float)
 data.qpos[:6] = HOME_QPOS.copy()
 data.qvel[:6] = 0.0
 

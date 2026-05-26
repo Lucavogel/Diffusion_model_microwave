@@ -43,16 +43,17 @@ def set_free_body_pose(model, data, body_name: str, pos: np.ndarray, quat_wxyz: 
 def randomize_microwave_objects(model, data):
     # Utiliser un générateur local non-deterministe pour éviter
     # d'être influencé par un seed global (ex. lors du chargement du modèle)
+    rng = np.random.default_rng()
    
     # -----------------------------
     # Objet 1 : microwave_rectangle
     # variation sur y seulement
     # -----------------------------
-    rect_y = -0.33 + np.random.uniform(-0.02, 0.02)
+    rect_y = -0.33 + rng.uniform(-0.02, 0.02)
     rect_pos = np.array([0.9, rect_y, 0.58], dtype=float)
 
-    rect_roll_choices = [1.57, 0.0]
-    rect_roll = float(np.random.choice(rect_roll_choices))
+    rect_roll_choices = [0.0, 1.57]
+    rect_roll = float(rng.choice(rect_roll_choices))
     rect_quat = rpy_to_quat_wxyz(0, rect_roll, 1.57)
 
     set_free_body_pose(
@@ -67,7 +68,7 @@ def randomize_microwave_objects(model, data):
     # variation sur y seulement
     # orientation : 90° ou 180°
     # -----------------------------
-    transf_y = -0.20 + np.random.uniform(-0.02, 0.02)
+    transf_y = -0.20 + rng.uniform(-0.02, 0.02)
     transf_pos = np.array([0.9, transf_y, 0.60], dtype=float)
 
    
@@ -78,6 +79,17 @@ def randomize_microwave_objects(model, data):
         "microwave_transformer",
         transf_pos,
         transf_quat
+    )
+
+    print(
+        "[Randomize] microwave_rectangle pos=",
+        rect_pos,
+        "quat(wxyz)=",
+        rect_quat,
+        "| microwave_transformer pos=",
+        transf_pos,
+        "quat(wxyz)=",
+        transf_quat,
     )
 
 def hide_free_body(model, data, body_name: str):

@@ -1,6 +1,14 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+# Ensure the repository's local `mujoco` package is preferred over any installed mujoco.
+# This makes `from mujoco.tests.utils...` resolve to the repo's module when running the script.
+import os
+import sys
+_repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+if _repo_root not in sys.path:
+    sys.path.insert(0, _repo_root)
+
 import argparse
 import collections
 import sys
@@ -15,8 +23,9 @@ import mujoco
 import mujoco.viewer
 import numpy as np
 import torch
+from mujoco.tests.utils.safety_config import SafetyChecker
 
-from scene_utils import randomize_microwave_objects, hide_free_body
+from mujoco.tests.utils.scene_utils import randomize_microwave_objects, hide_free_body
 
 # ============================================================
 # Paths
@@ -143,12 +152,25 @@ def preprocess_rgb(img: np.ndarray) -> np.ndarray:
 
 
 def load_policy(checkpoint_path: str, device: torch.device):
-    payload = torch.load(checkpoint_path, map_location=device, pickle_module=dill)
+    ckpt_path = Path(checkpoint_path)
+    if not ckpt_path.is_file():
+        raise FileNotFoundError(f"Checkpoint not found: {ckpt_path}")
+
+    # Large training checkpoints can be several GB because they include optimizer
+    # states. mmap reduces peak RAM usage when supported by torch.
+    try:
+        payload = torch.load(str(ckpt_path), map_location='cpu', pickle_module=dill, mmap=True)
+    except TypeError:
+        payload = torch.load(str(ckpt_path), map_location='cpu', pickle_module=dill)
+
+    if "state_dicts" in payload and isinstance(payload["state_dicts"], dict):
+        payload["state_dicts"].pop("optimizer", None)
+
     cfg = payload["cfg"]
 
     cls = hydra.utils.get_class(cfg._target_)
     workspace = cls(cfg, output_dir=str(ROOT_DIR / "mujoco" / "outputs"))
-    workspace.load_payload(payload, exclude_keys=None, include_keys=None)
+    workspace.load_payload(payload, exclude_keys=("optimizer",), include_keys=None)
 
     policy = workspace.model
     if cfg.training.use_ema:
@@ -305,6 +327,16 @@ def main() -> None:
         action="store_true",
         help="Print each new predicted plan",
     )
+    parser.add_argument(
+        "--save_traj",
+        action="store_true",
+        help="Record qpos only to replay it later at a constant speed.",
+    )
+    parser.add_argument(
+        "--save_traj_path",
+        default=str(ROOT_DIR / "data" / "outputs" / "smooth_trajectory.npz"),
+        help="Path where the recorded NPZ trajectory will be saved.",
+    )
     args = parser.parse_args()
 
     device = torch.device(args.device)
@@ -316,6 +348,9 @@ def main() -> None:
     n_obs_steps = int(cfg.n_obs_steps)
     pred_horizon = int(cfg.horizon)
     exec_horizon = int(args.exec_horizon) if args.exec_horizon is not None else int(cfg.n_action_steps)
+    safety_checker = SafetyChecker(q=np.zeros(6, dtype=np.float64))
+
+    
 
     if not (1 <= exec_horizon <= pred_horizon):
         raise ValueError(
@@ -350,7 +385,7 @@ def main() -> None:
     # masquer éventuellement un objet (utiliser RNG local pour éviter la dépendance
     # au seed global qui peut rendre le choix déterministe)
     
-    mode = ["both", "rectangle_only", "transformer_only"][int(np.random.randint(0, 3))]
+    '''mode = ["both", "rectangle_only", "transformer_only"][int(np.random.randint(0, 3))]
     print(f"DEBUG: sampled visibility mode: {mode}")
     if mode == "both":
         pass
@@ -358,7 +393,7 @@ def main() -> None:
         hide_free_body(model, data, "microwave_transformer")
     elif mode == "transformer_only":
         hide_free_body(model, data, "microwave_rectangle")
-
+    '''
     mujoco.mj_forward(model, data)
 
     # Joint limits
@@ -407,6 +442,7 @@ def main() -> None:
     alpha_grip = float(args.alpha_grip)
 
     prev_sim_time = data.time
+    safety_hold = False
 
     # ========================================================
     # Observation helpers
@@ -417,18 +453,27 @@ def main() -> None:
 
         img_agent = renderer_agent.render()
         img_wrist = renderer_wrist.render()
-        # même convention que pendant la collecte:
-        # render at 640x480, rotate, then downsample to 84x84 before preprocessing
-        img_agent = cv2.rotate(img_agent, cv2.ROTATE_90_COUNTERCLOCKWISE)
-        img_wrist = cv2.rotate(img_wrist, cv2.ROTATE_180)
-
+        
+        # --- ANCIEN CODE (Correspond à ton dataset actuel) ---
+        # On reproduit exactement le pipeline de ton dataset: on resize D'ABORD, puis on rotate.
         DATA_COLLECTION_H = 84
         DATA_COLLECTION_W = 84
+        # img_agent_84 = cv2.resize(img_agent, (DATA_COLLECTION_W, DATA_COLLECTION_H))
+        # img_wrist_84 = cv2.resize(img_wrist, (DATA_COLLECTION_W, DATA_COLLECTION_H))
+
+        # img_agent_84 = cv2.rotate(img_agent_84, cv2.ROTATE_90_COUNTERCLOCKWISE)
+        # img_wrist_84 = cv2.rotate(img_wrist_84, cv2.ROTATE_180)
+
+        # --- NOUVEAU CODE POUR LE FUTUR (Quand les xml caméras seront tournés) ---
         img_agent_84 = cv2.resize(img_agent, (DATA_COLLECTION_W, DATA_COLLECTION_H), interpolation=cv2.INTER_AREA)
         img_wrist_84 = cv2.resize(img_wrist, (DATA_COLLECTION_W, DATA_COLLECTION_H), interpolation=cv2.INTER_AREA)
 
         eef_pos = data.site_xpos[grasp_site_id].copy().astype(np.float32)
-        eef_quat = rot_to_quat(data.site_xmat[grasp_site_id].reshape(3, 3)).astype(np.float32)
+        # UTILISER LA FONCTION MUJOCO POUR AVOIR LE QUATERNION [w, x, y, z] (COMME DANS LE DATASET !!!)
+        rec_rot_quat = np.empty(4)
+        mujoco.mju_mat2Quat(rec_rot_quat, data.site_xmat[grasp_site_id].flatten())
+        eef_quat = rec_rot_quat.astype(np.float32)
+
         gripper_qpos = np.array(
             [data.qpos[6] if data.qpos.shape[0] > 6 else 0.0],
             dtype=np.float32,
@@ -494,10 +539,16 @@ def main() -> None:
         f"orientation={orient_mode}"
     )
 
+    recorded_qpos = []
+    recorded_qvel = []
+    recorded_qacc = []
+    recorded_time = []
+
     # ========================================================
     # Main loop
     # ========================================================
     with mujoco.viewer.launch_passive(model, data) as viewer:
+        
         while viewer.is_running():
             # --------------------------------------------
             # Detect manual reset from viewer if any
@@ -507,11 +558,14 @@ def main() -> None:
                 mujoco.mj_forward(model, data)
 
                 q_target = data.qpos[:6].copy()
+
+
                 smooth_dq[:] = 0.0
                 smooth_gripper_cmd = float(data.qpos[6] if data.qpos.shape[0] > 6 else -0.2)
 
                 action_buffer.clear()
                 current_action = None
+                safety_hold = False
                 last_action_switch_sim_t = data.time - action_dt
                 refill_initial_obs_history()
 
@@ -520,7 +574,7 @@ def main() -> None:
             # --------------------------------------------
             # Policy/action tick based on SIMULATION TIME
             # --------------------------------------------
-            if (data.time - last_action_switch_sim_t) >= action_dt:
+            if (not safety_hold) and (data.time - last_action_switch_sim_t) >= action_dt:
                 push_observation()
 
                 # replan only when buffer is empty
@@ -546,13 +600,18 @@ def main() -> None:
                     # decode into execution-space targets (pos, rot matrix, gripper)
                     # use most recent observed orientation as current reference for decode_action
                     obs_quat = np.array(obs_hist["robot0_eef_quat"][-1], dtype=np.float64)
-                    R_ref = quat_to_rot(float(obs_quat[0]), float(obs_quat[1]), float(obs_quat[2]), float(obs_quat[3]))
+                    # ATTENTION: obs_quat est maintenant un quaternion MuJoCo [W, X, Y, Z]
+                    # La fonction quat_to_rot s'attend à [X, Y, Z, W], donc il faut réordonner pour la fonction
+                    R_ref = quat_to_rot(float(obs_quat[1]), float(obs_quat[2]), float(obs_quat[3]), float(obs_quat[0]))
                     new_end_pos, new_end_rot, new_end_gripper = decode_action(
                         current_action,
                         ignore_action_orientation=args.ignore_action_orientation,
                         current_rot=R_ref,
                     )
                     new_end_quat = rot_to_quat(new_end_rot)
+                    
+                    # ATTENTION: On reconvertit le quaternion de sortie [X, Y, Z, W] vers le format interne MuJoCo/Interpolation [W, X, Y, Z]
+                    new_end_quat = np.array([new_end_quat[3], new_end_quat[0], new_end_quat[1], new_end_quat[2]], dtype=np.float32)
 
                     # set interpolation window: from previous target -> new_end over [action_start_time, action_start_time+action_dt]
                     interp_start_pos = prev_target_pos.copy()
@@ -575,7 +634,7 @@ def main() -> None:
             # --------------------------------------------
             # Fast IK controller at each mj_step
             # --------------------------------------------
-            if current_action is not None:
+            if (current_action is not None) and (not safety_hold):
                 grasp_pos = data.site_xpos[grasp_site_id].copy()
                 R_current = data.site_xmat[grasp_site_id].reshape(3, 3).copy()
 
@@ -588,7 +647,9 @@ def main() -> None:
 
                 target_pos = (1.0 - alpha) * interp_start_pos + alpha * interp_end_pos
                 interp_quat = quat_slerp(interp_start_quat, interp_end_quat, alpha)
-                target_rot = quat_to_rot(float(interp_quat[0]), float(interp_quat[1]), float(interp_quat[2]), float(interp_quat[3]))
+                # interp_quat est au format MuJoCo [W, X, Y, Z]
+                # quat_to_rot prend des arguments (qx, qy, qz, qw)
+                target_rot = quat_to_rot(float(interp_quat[1]), float(interp_quat[2]), float(interp_quat[3]), float(interp_quat[0]))
                 gripper_cmd = float((1.0 - alpha) * interp_start_gripper + alpha * interp_end_gripper)
 
                 pos_err = target_pos - grasp_pos
@@ -617,11 +678,43 @@ def main() -> None:
                     data.ctrl[6] = float(np.clip(smooth_gripper_cmd, -0.2, 1.2))
             else:
                 data.ctrl[:6] = q_target
+            
+
+            #---------------------------------
+            # Safety check
+            #---------------------------------
+
+            # call checker with current dynamics and Jacobian (if available)
+            _J = J if 'J' in locals() else None
+            status = safety_checker.check_loop(qvel=data.qvel, qacc=data.qacc, J=_J)
+            decision = status.get("status", "").lower()
+            if decision != "ok":
+                print(f"[SAFETY CHECK] status={status.get('status')} | The reason = {status.get('reason')} | metrics={status.get('metrics')}. Holding robot joints in place for safety.")
+                safety_hold = True
+                action_buffer.clear()
+                current_action = None
+                smooth_dq[:] = 0.0
+                q_target = data.qpos[:6].copy()
+                data.ctrl[:6] = q_target
+                if model.nu > 6:
+                    smooth_gripper_cmd = float(data.qpos[6] if data.qpos.shape[0] > 6 else -0.2)
+                    data.ctrl[6] = float(np.clip(smooth_gripper_cmd, -0.2, 1.2))
+                break
+
+
+
 
             # --------------------------------------------
             # One physics step only
             # --------------------------------------------
             mujoco.mj_step(model, data)
+
+
+            if args.save_traj:
+                recorded_qpos.append(data.qpos.copy())
+                recorded_qvel.append(data.qvel.copy())
+                recorded_qacc.append(data.qacc.copy())
+                recorded_time.append(float(data.time))
 
             # --------------------------------------------
             # Viewer sync cap
@@ -629,6 +722,18 @@ def main() -> None:
             if (time.time() - last_viewer_sync_wall_t) >= (1.0 / args.viewer_fps):
                 viewer.sync()
                 last_viewer_sync_wall_t = time.time()
+
+    if args.save_traj and len(recorded_qpos) > 0:
+        Path(args.save_traj_path).parent.mkdir(parents=True, exist_ok=True)
+        np.savez(
+            args.save_traj_path,
+            qpos=np.array(recorded_qpos),
+            qvel=np.array(recorded_qvel),
+            qacc=np.array(recorded_qacc),
+            time=np.array(recorded_time, dtype=np.float64),
+        )
+        print(f"\n[INFO] Trajectoire sauvegardée pour replay fluide dans : {args.save_traj_path}")
+        print(f"       ({len(recorded_qpos)} frames enregistrées)")
 
 
 if __name__ == "__main__":

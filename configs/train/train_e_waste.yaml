@@ -47,6 +47,13 @@ policy:
     resize_shape: null
     crop_shape: [76, 76]
     random_crop: True
+    # photometric_augment:
+    #   agentview_image:
+    #     brightness: 0.05
+    #     contrast: 0.05
+    #   robot0_eye_in_hand_image:
+    #     brightness: 0.10
+    #     contrast: 0.10
     use_group_norm: True
     share_rgb_model: False
     imagenet_norm: True
@@ -57,7 +64,7 @@ policy:
   num_inference_steps: 16
   obs_as_global_cond: ${obs_as_global_cond}
   diffusion_step_embed_dim: 128
-  down_dims: [512, 1024, 2048]
+  down_dims: [256, 512, 1024]
   kernel_size: 5
   n_groups: 8
   cond_predict_scale: True
@@ -89,7 +96,7 @@ optimizer:
   lr: 1.0e-4
   betas: [0.95, 0.999]
   eps: 1.0e-8
-  weight_decay: 1.0e-6
+  weight_decay: 1.0e-5
 
 training:
   device: "cuda:0"
@@ -97,13 +104,13 @@ training:
   debug: False
   resume: False
   lr_scheduler: cosine
-  lr_warmup_steps: 400
+  lr_warmup_steps: 500
   num_epochs: 600
   gradient_accumulate_every: 1
   use_ema: True
   freeze_encoder: False
-  rollout_every: 50
-  checkpoint_every: 200
+  rollout_every: 20
+  checkpoint_every: 150
   val_every: 1
   sample_every: 5
   max_train_steps: null
@@ -113,7 +120,7 @@ training:
 logging:
   project: diffusion_policy_debug
   resume: False
-  mode: offline
+  mode: online
   name: ${now:%Y.%m.%d-%H.%M.%S}_${name}_${task_name}
   tags: ["${name}", "${task_name}", "${exp_name}"]
   id: null
@@ -121,7 +128,7 @@ logging:
 
 checkpoint:
   topk:
-    monitor_key: train_loss
+    monitor_key: val_loss
     mode: min
     k: 5
     format_str: 'epoch={epoch:04d}-train_loss={train_loss:.3f}.ckpt'

@@ -28,7 +28,7 @@ from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy, DurabilityPo
 from mujoco_scene_utils import randomize_microwave_objects, hide_free_body, show_free_body
 
 
-MODEL_PATH = Path("/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/mujoco/models/universal_robots_ur10e/scene_microwave.xml")
+MODEL_PATH = Path("/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/mujoco/models/universal_robots_ur10e/scene_microwave_camera.xml")
 
 
 def quat_to_rot(qx: float, qy: float, qz: float, qw: float) -> np.ndarray:
@@ -120,6 +120,9 @@ class TeleopTargetListener(Node):
         self.gripper_value = -0.2
         self.last_gripper_time = self.get_clock().now()
 
+        self.target_filter_alpha_pos = 0.2
+        self.target_filter_alpha_rot = 0.15
+
         sensor_qos = QoSProfile(
             history=HistoryPolicy.KEEP_LAST,
             depth=1,
@@ -188,6 +191,10 @@ class TeleopTargetListener(Node):
             delta_rot = touch_rot @ self.prev_touch_rot.T
             self.target_rot = delta_rot @ self.target_rot
 
+            # Correction de la dérive numérique (orthogonalisation)
+            U, _, Vt = np.linalg.svd(self.target_rot)
+            self.target_rot = U @ Vt
+
             self.prev_touch_pos = touch_pos
             self.prev_touch_rot = touch_rot
 
@@ -220,6 +227,20 @@ class TeleopTargetListener(Node):
             if self.target_pos is None or self.target_rot is None:
                 return None, None, float(self.gripper_cmd)
             return self.target_pos.copy(), self.target_rot.copy(), float(self.gripper_cmd)
+
+    def sync_to_pose(self, pos: np.ndarray, rot: np.ndarray) -> None:
+        with self.lock:
+            if self.target_pos is not None and self.target_rot is not None:
+                self.target_pos = pos.copy()
+                self.target_rot = rot.copy()
+
+    def progressive_sync(self, pos: np.ndarray, rot: np.ndarray, freeze_alpha: float = 0.15) -> None:
+        with self.lock:
+            if self.target_pos is not None and self.target_rot is not None:
+                self.target_pos = (1.0 - freeze_alpha) * self.target_pos + freeze_alpha * pos
+                R_blend = (1.0 - freeze_alpha) * self.target_rot + freeze_alpha * rot
+                U, _, Vt = np.linalg.svd(R_blend)
+                self.target_rot = U @ Vt
 
 
 def ros_spin_thread(node: Node):
@@ -259,7 +280,9 @@ def main() -> None:
     smooth_dq = np.zeros(6) # Mémoire du filtre passe-bas pour l'IK
     smooth_gripper_cmd = -0.2
 
-   
+    # Variables anti-blocage
+    last_grasp_pos = None
+    blocked_counter = 0
 
     # Gains ajustés pour éviter l'overshoot (oscillation continue)
     Kp_pos = 5.0
@@ -276,7 +299,7 @@ def main() -> None:
         WIDTH = 640
         HEIGHT = 480
         renderer_front = mujoco.Renderer(model, height=HEIGHT, width=WIDTH)
-        renderer_top = mujoco.Renderer(model, height=WIDTH, width=HEIGHT)
+        renderer_top = mujoco.Renderer(model, height=HEIGHT, width=WIDTH)
 
     # ------------------
     # VARIABLES D'ENREGISTREMENT
@@ -300,8 +323,9 @@ def main() -> None:
     saved_episodes_total = 0
     saved_episodes_session = 0
 
-    # Tenter de trouver un dataset existant dans data/datasets et lire son nombre d'épisodes
-    APPEND_TO_LATEST = True  # Met a False si tu veux forcer la creation d'un NOUVEAU dossier .zarr
+    
+    APPEND_TO_LATEST = False  # Met a False si tu veux forcer la creation d'un NOUVEAU dossier .zarr
+
     try:
         repo_root = Path(__file__).resolve().parents[2]
         datasets_dir = repo_root / "data" / "datasets"
@@ -345,7 +369,7 @@ def main() -> None:
         last_space_press = 0.0 # Anti-rebond pour la touche ESPACE
         prev_sim_time = data.time
 
-        render_hz = 30.0
+        render_hz = 60.0
         render_period = 1.0 / render_hz
 
         # Diagnostic initial: afficher quelques infos modèle/actuateurs
@@ -396,9 +420,8 @@ def main() -> None:
             if target_pos is None:
                 data.ctrl[:6] = home_q
                 if model.nu > 6:
-                    if model.nu > 6:
-                        data.ctrl[6] = gripper_cmd
-                        smooth_gripper_cmd = gripper_cmd
+                    data.ctrl[6] = gripper_cmd
+                    smooth_gripper_cmd = gripper_cmd
 
                 mujoco.mj_step(model, data)
             else:
@@ -408,10 +431,12 @@ def main() -> None:
                 pos_err = target_pos - grasp_pos
                 rot_err = orientation_error(target_rot, R_current)
 
-                # Zone morte
-                if np.linalg.norm(pos_err) < 0.001:
+                POS_DEADZONE = 0.0025   # 2.5 mm
+                ROT_DEADZONE = 0.03     # à ajuster
+
+                if np.linalg.norm(pos_err) < POS_DEADZONE:
                     pos_err[:] = 0.0
-                if np.linalg.norm(rot_err) < 0.015:
+                if np.linalg.norm(rot_err) < ROT_DEADZONE:
                     rot_err[:] = 0.0
 
                 err = np.hstack([Kp_pos * pos_err, Kp_rot * rot_err])
@@ -424,7 +449,7 @@ def main() -> None:
 
                 lambda2 = 5e-3
                 JJt = J @ J.T
-                dq = J.T @ np.linalg.inv(JJt + lambda2 * np.eye(6)) @ err
+                dq = J.T @ np.linalg.solve(JJt + lambda2 * np.eye(6), err)
                 dq = np.clip(dq, -0.8, 0.8)
 
                 alpha_dq = 0.2
@@ -435,10 +460,12 @@ def main() -> None:
 
                 data.ctrl[:6] = q_target
 
+                
+                    
+
                 if model.nu > 6:
-                    if model.nu > 6:
-                        data.ctrl[6] = gripper_cmd
-                        smooth_gripper_cmd = gripper_cmd
+                    data.ctrl[6] = gripper_cmd
+                    smooth_gripper_cmd = gripper_cmd
 
                 mujoco.mj_step(model, data)
 
@@ -472,9 +499,14 @@ def main() -> None:
                     renderer_top.update_scene(data, camera="top_table")
                     img_top = renderer_top.render()
 
-                    img_front = cv2.rotate(img_front, cv2.ROTATE_180)
-                    img_top = cv2.rotate(img_top, cv2.ROTATE_90_COUNTERCLOCKWISE)
+                    # --- ANCIEN CODE (Pour la gestion de ton dataset actuel) ---
+                    # img_front = cv2.rotate(img_front, cv2.ROTATE_180)
+                    # img_top = cv2.rotate(img_top, cv2.ROTATE_90_COUNTERCLOCKWISE)
 
+                    # img_front = cv2.cvtColor(img_front, cv2.COLOR_RGB2BGR)
+                    # img_top = cv2.cvtColor(img_top, cv2.COLOR_RGB2BGR)
+
+                    # --- CODE POUR LE FUTUR (Quand les cameras XML seront tournées) ---
                     img_front = cv2.cvtColor(img_front, cv2.COLOR_RGB2BGR)
                     img_top = cv2.cvtColor(img_top, cv2.COLOR_RGB2BGR)
 
@@ -580,24 +612,10 @@ def main() -> None:
                         except Exception:
                             pass
 
-                            # restaurer l'affichage des objets au cas où ils auraient été cachés
-                        '''try:
-                            show_free_body(model, data, "microwave_transformer")
-                            show_free_body(model, data, "microwave_rectangle")
-                        except Exception:
-                            pass'''
-
+                    
                         # randomisation des objets
                         randomize_microwave_objects(model, data)
 
-                        # par intermittence, masquer un des objets
-                        '''mode = np.random.choice(["both", "rectangle_only", "transformer_only"])
-                        if mode == "both":
-                            pass
-                        elif mode == "rectangle_only":
-                            hide_free_body(model, data, "microwave_transformer")
-                        elif mode == "transformer_only":
-                            hide_free_body(model, data, "microwave_rectangle")'''
 
                         mujoco.mj_forward(model, data)
 
@@ -616,13 +634,9 @@ def main() -> None:
                         # Récupérer les poses depuis mujoco directement (pour être toujours valides)
                         rec_grasp_pos = data.site_xpos[grasp_site_id].copy()
                         rec_R_current = data.site_xmat[grasp_site_id].reshape(3, 3).copy()
-                        
-                        # Redimensionner l'image en 84x84 comme attendu par le modèle
-                        img_front_84 = cv2.resize(renderer_front.render(), (84, 84))
-                        img_top_84 = cv2.resize(renderer_top.render(), (84, 84))
-                        
-                        img_front_84 = cv2.rotate(img_front_84, cv2.ROTATE_180)
-                        img_top_84 = cv2.rotate(img_top_84, cv2.ROTATE_90_COUNTERCLOCKWISE)
+                       
+                        img_front_84 = cv2.resize(renderer_front.render(), (84, 84), interpolation=cv2.INTER_AREA)
+                        img_top_84 = cv2.resize(renderer_top.render(), (84, 84), interpolation=cv2.INTER_AREA)
 
                         current_episode_data['robot0_eye_in_hand_image'].append(img_front_84)
                         current_episode_data['agentview_image'].append(img_top_84)

@@ -135,7 +135,11 @@
                   <geom material="linkgray" mesh="wrist3" class="visual" />
                   <geom class="eef_collision" pos="0 0.097 0" quat="1 1 0 0" size="0.046 0.02" />
                   <site name="attachment_site" pos="0 0.1 0" quat="-1 1 0 0" />
-                  <camera name="wrist_cam" pos="0.00 0.00 -0.1" xyaxes="1 0 0 0 0 1" />
+                  <!-- ANCIENNE CAMERA (Axe de base) -->
+                  <!-- <camera name="wrist_cam" pos="0.00 0.00 -0.1" xyaxes="1 0 0 0 0 1" /> -->
+                  
+                  <!-- NOUVELLE CAMERA POUR LE FUTUR (Orientation corrigée dans le XML pour éviter cv2.rotate) -->
+                  <camera name="wrist_cam" pos="0.00 0.00 -0.1" xyaxes="-1 0 0 0 0 -1" />
 
                   <body name="rg2ft_gripper" pos="0 0 0" quat="-1 1 0 0">
                     <geom pos="0 0 0.1" quat="1 0 0 0"

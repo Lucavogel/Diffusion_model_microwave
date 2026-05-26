@@ -130,8 +130,7 @@ export PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
 python train.py \
   --config-name=train_e_waste \
   task=e_waste_image \
-  task.dataset_path=/workspace/demo_data_20260427_151232.zarr \
-  training.num_epochs=600 \
+  task.dataset_path=/workspace/demo_data_20260430_150524.zarr \
   training.resume=False \
   training.device=cuda:0 \
   logging.mode=disabled \
@@ -154,9 +153,9 @@ wandb login --relogin
 wandb status
 
 cd /workspace
-python train.py --config-name=train_e_waste \
-  task=e_waste_image \
-  task.dataset_path=/workspace/data/datasets/demo_data_20260427_151232.zarr \
+python train.py --config-name=train_e_waste_transformer \
+  task=e_waste_image_transformer \
+  task.dataset_path=/workspace/demo_data_20260518_143018.zarr \
   training.device=cuda:0 \
   logging.mode=online \
   logging.resume=False
@@ -204,13 +203,17 @@ dans le serveur pas docker:
 ```zsh
 mkdir -p /auto/lvogelgesang/tmp_ckpt
 
-docker cp diffusion-model:/workspace/data/outputs/2026.04.29/06.53.35_train_diffusion_unet_image_e_waste_image/checkpoints/latest.ckpt /auto/lvogelgesang/tmp_ckpt/latest.ckpt
+docker cp diffusion-model:/workspace/data/outputs/2026.05.21/08.07.08_train_diffusion_transformer_e_waste_e_waste_image_transformer/checkpoints/latest.ckpt /auto/lvogelgesang/tmp_ckpt/transformer_moredata.ckpt
+
+docker cp diffusion-model:/workspace/data/outputs/2026.05.06/08.55.26_train_diffusion_unet_image_e_waste_image_transformer/logs.json.txt /auto/lvogelgesang/tmp_ckpt/logs.json.txt
 ```
 dans le pc local:
 ```zsh
-rsync -avzP lvogelgesang@mic-gpu1:/auto/lvogelgesang/tmp_ckpt/latest.ckpt \
+rsync -avzP lvogelgesang@mic-gpu1:/auto/lvogelgesang/tmp_ckpt/transformer_moredata.ckpt\
   /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/data/checkpoints/
 
+rsync -avzP lvogelgesang@mic-gpu1:/auto/lvogelgesang/tmp_ckpt/logs.json.txt \
+  /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/data/checkpoints/logs
 
 netoyer :
 ssh lvogelgesang@mic-gpu1 'rm -rf /auto/lvogelgesang/tmp_ckpt'
@@ -218,3 +221,25 @@ ssh lvogelgesang@mic-gpu1 'rm -rf /auto/lvogelgesang/tmp_ckpt'
 du -sh /workspace/data/outputs
 
 df -h
+
+
+==================================================
+Lancer avec tmux 
+==================================================
+Une fois connecté en SSH sur le serveur
+```zsh
+
+tmux
+
+```
+
+Pour quitter le tmux sans l'éteindre et retourner à ton terminal normal, fais la combinaison de touches :
+Ctrl+B puis D (pour "Detach").
+
+Retrouver ton tmux plus tard :
+
+```zsh
+
+tmux attach
+
+```
