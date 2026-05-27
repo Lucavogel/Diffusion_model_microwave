@@ -1,8 +1,8 @@
-# 🤖 Diffusion Model - MuJoCo Simulation & ROS2 Deployment
+# Diffusion Model - MuJoCo Simulation & ROS2 Deployment
 
 This repository implements a **Diffusion Policy** model tailored for robotic control, developed as part of an internship at LIRMM. The system is designed for both simulation (MuJoCo) and real-world deployment (via ROS2) of a UR10e robotic arm with a gripper, focusing on complex manipulation tasks such as e-waste sorting.
 
-## 🎥 Demonstrations
+## Demonstrations
 
 ### Environment Overview
 
@@ -15,7 +15,7 @@ This repository implements a **Diffusion Policy** model tailored for robotic con
 </video>
 *Diffusion model deployment on a microwave disassembly task: grabbing two objects out of a cavity and placing them into their respective sorting boxes.*
 
-## 📁 Project Architecture
+## Project Architecture
 
 - **`configs/`**: Hydra configuration files for training and environment setups (e.g., `e_waste_image.yaml`).
 - **`data/`**: Directory for training datasets (`.zarr` files), network checkpoints (`u_net_model.ckpt`), and logs.
@@ -24,7 +24,7 @@ This repository implements a **Diffusion Policy** model tailored for robotic con
 - **`ros2_WS/`**: ROS2 workspace for real-robot control (includes hardware drivers like `touch_ros2_driver`).
 - **`scripts/`**: Utility scripts (e.g., `traj_zarr.py` for 3D trajectory replay, `check_zarr.py`, metrics plotting, etc.).
 
-## 🚀 Installation & Prerequisites
+## Installation & Prerequisites
 
 A detailed guide for setting up the environment can be found in [README_ENV.md](README_ENV.md).
 
@@ -35,7 +35,7 @@ conda activate <your_env_name>
 pip install -r requirements_sim.txt
 ```
 
-## 🎮 Usage
+## Usage
 
 ### 1. Teleoperation and Data Collection
 Teleoperation scripts are available in `mujoco/teleop/` locally to generate your own demonstration datasets.
