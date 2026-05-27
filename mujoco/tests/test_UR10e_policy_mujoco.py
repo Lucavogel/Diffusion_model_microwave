@@ -675,7 +675,7 @@ def main() -> None:
 
                 if model.nu > 6:
                     smooth_gripper_cmd = alpha_grip * gripper_cmd + (1.0 - alpha_grip) * smooth_gripper_cmd
-                    data.ctrl[6] = float(np.clip(smooth_gripper_cmd, -0.2, 1.2))
+                    data.ctrl[6] = float(np.clip(smooth_gripper_cmd, -0.2, 1.2) )
             else:
                 data.ctrl[:6] = q_target
             
@@ -700,9 +700,6 @@ def main() -> None:
                     smooth_gripper_cmd = float(data.qpos[6] if data.qpos.shape[0] > 6 else -0.2)
                     data.ctrl[6] = float(np.clip(smooth_gripper_cmd, -0.2, 1.2))
                 break
-
-
-
 
             # --------------------------------------------
             # One physics step only
