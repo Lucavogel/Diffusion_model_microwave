@@ -18,7 +18,7 @@ This repository implements a **Diffusion Policy** model tailored for robotic con
   Your browser does not support the video tag.
 </video>
 https://github.com/user-attachments/assets/5065d1bc-a97e-4889-a67c-71cdfe236247
-*Diffusion model deployment on a microwave disassembly task: grabbing two objects out of a cavity and placing them into their respective sorting boxes.*
+*Diffusion model deployment on a microwave disassembly task: grabbing two objects out of a cavity and placing them into their respective sorting boxes. The objects spawn with a random offset of ±0.2m along the y-axis.*
 
 ## Project Architecture
 
