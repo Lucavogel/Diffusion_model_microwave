@@ -22,15 +22,6 @@ cd /home/luca/Stage_Lirmm/Diffusion-model-isaacsim
 ros2 launch touch_ros2_driver touch_rviz.launch.py
 ') &
 
-# Terminal 3 : Node follower (mapping Touch vers cible robot)
-# Désactivé : le driver C++ publie maintenant directement /touch/* et
-# le script MuJoCo s'abonne directement. Si besoin, décommenter pour lancer
-# le node intermédiaire localement.
-#(gnome-terminal -- zsh -c '
-#source /opt/ros/humble/setup.zsh
-#source ~/venvs/mujoco_ros/bin/activate
-#cd /home/luca/Stage_Lirmm/Diffusion-model-isaacsim
-#python mujoco/tests/test_UR10e_ik_follower.py
-#') &
+
 
 wait
