@@ -1,3 +1,7 @@
+
+
+
+
 # Diffusion Model - MuJoCo Simulation & ROS2 Deployment
 
 This repository implements a **Diffusion Policy** model tailored for robotic control, developed as part of an internship at LIRMM. The system is designed for both simulation (MuJoCo) and real-world deployment (via ROS2) of a UR10e robotic arm with a gripper, focusing on complex manipulation tasks such as e-waste sorting.
@@ -13,6 +17,7 @@ This repository implements a **Diffusion Policy** model tailored for robotic con
 <video src="diffusion_policy/media/deployment_simu.mp4" controls="controls" muted="muted" playsinline="playsinline" width="100%">
   Your browser does not support the video tag.
 </video>
+https://github.com/user-attachments/assets/5065d1bc-a97e-4889-a67c-71cdfe236247
 *Diffusion model deployment on a microwave disassembly task: grabbing two objects out of a cavity and placing them into their respective sorting boxes.*
 
 ## Project Architecture
