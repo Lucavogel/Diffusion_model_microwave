@@ -1,0 +1,42 @@
+name: e_waste_image
+
+image_shape: [3, 240, 320]
+dataset_path: /workspace/data/datasets/demo_data_20260430_150524.zarr
+
+shape_meta: &shape_meta
+  obs:
+    agentview_image:
+      shape: ${task.image_shape}
+      type: rgb
+    robot0_eye_in_hand_image:
+      shape: ${task.image_shape}
+      type: rgb
+    robot0_eef_pos:
+      shape: [3]
+      type: low_dim
+    robot0_eef_quat:
+      shape: [4]
+      type: low_dim
+    robot0_gripper_qpos:
+      shape: [1]
+      type: low_dim
+  action:
+    shape: [8]
+
+env_runner:
+  _target_: diffusion_policy.env_runner.real_pusht_image_runner.RealPushTImageRunner
+
+dataset:
+  _target_: diffusion_policy.dataset.generic_image_dataset.GenericImageDataset
+  shape_meta: *shape_meta
+  dataset_path: ${task.dataset_path}
+  horizon: ${horizon}
+  pad_before: ${eval:'${n_obs_steps}-1+${n_latency_steps}'}
+  pad_after: ${eval:'${n_action_steps}-1'}
+  n_obs_steps: ${dataset_obs_steps}
+  n_latency_steps: ${n_latency_steps}
+  use_cache: True
+  seed: 42
+  val_ratio: 0.02
+  max_train_episodes: null
+  delta_action: False

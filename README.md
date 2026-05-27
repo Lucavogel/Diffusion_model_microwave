@@ -62,3 +62,9 @@ You can use the provided bash script to run the main pipeline operations:
 ```bash
 bash launch_all.sh
 ```
+
+## Acknowledgements
+
+This project builds on the Diffusion Policy codebase from the Columbia Artificial Intelligence and Robotics Lab, which is distributed under the MIT License. The original copyright notice and license terms are preserved in [diffusion_policy/LICENSE](diffusion_policy/LICENSE).
+
+This repository includes modifications for UR10e, MuJoCo simulation, ROS2 deployment, and e-waste manipulation experiments.

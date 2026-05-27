@@ -16,7 +16,7 @@ class SafetyConfig:
    
     velocity_stop_threshold: float = 1.0
     
-    acceleration_stop_threshold: float = 70.0
+    acceleration_stop_threshold: float = 75.0
     #TODO needs to be changed on real robot
     acceleration_emergency_threshold: float = 100.0
     acceleration_filter_window: int = 5
