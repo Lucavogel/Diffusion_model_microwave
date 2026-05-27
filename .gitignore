@@ -10,7 +10,7 @@ ros2_WS/src/Universal_Robots_ROS2_Description/
 /build/
 /install/
 /log/
-diffusion_policy/
+# diffusion_policy/
 # Fichiers Python
 __pycache__/
 *.py[cod]
