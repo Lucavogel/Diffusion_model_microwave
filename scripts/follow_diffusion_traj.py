@@ -17,7 +17,7 @@ def main() -> None:
     )
     parser.add_argument(
         "--model_xml",
-        default="/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/mujoco/models/universal_robots_ur10e/scene_microwave.xml",
+        default="/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/dp_mujoco/models/universal_robots_ur10e/scene_microwave.xml",
         help="MuJoCo XML scene used for replay",
     )
     parser.add_argument(

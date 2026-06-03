@@ -1,5 +1,5 @@
 data/
-mujoco/models/vendor/
+dp_mujoco/models/vendor/
 ros2_WS/build/
 ros2_WS/install/
 ros2_WS/log/

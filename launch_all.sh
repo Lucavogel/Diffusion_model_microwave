@@ -7,7 +7,7 @@
 source /opt/ros/humble/setup.zsh
 source ~/venvs/mujoco_ros/bin/activate
 cd /home/luca/Stage_Lirmm/Diffusion-model-isaacsim
-python mujoco/teleop/test_UR10e_touch.py
+python -m dp_mujoco.teleop.test_UR10e_touch
 ') &
 
 # Terminal 2 : ROS2 + Touch driver + RViz

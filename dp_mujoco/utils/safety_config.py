@@ -5,7 +5,7 @@ import numpy as np
 
 @dataclass
 class SafetyConfig:
-    safety_velocity: float = 0.8
+    safety_velocity: float = 0.81
     safety_acceleration: float = 10.0
     jacobian_threshold: float = 700.0
     # Jacobian / condition thresholds
@@ -16,7 +16,7 @@ class SafetyConfig:
    
     velocity_stop_threshold: float = 1.0
     
-    acceleration_stop_threshold: float = 75.0
+    acceleration_stop_threshold: float = 50.0
     #TODO needs to be changed on real robot
     acceleration_emergency_threshold: float = 100.0
     acceleration_filter_window: int = 5
@@ -32,10 +32,10 @@ class SafetyConfig:
 
 class SafetyChecker:
     def __init__(self, config = None, q = None):
-        # use provided config or defaults
+        
         self.config = config or SafetyConfig()
 
-        # number of joints we expect to monitor (default to 6 for UR10e)
+        
         self.n_joints = len(q) if q is not None else 6
 
         # hysteresis / consecutive counts to avoid noisy triggers
@@ -49,10 +49,9 @@ class SafetyChecker:
         self._acc_emergency_count = 0
         self._recover_streak = 0
 
-        # logger
+       
         self._logger = logging.getLogger(__name__)
 
-        # last decision made by the checker ('ok','stop')
         self.last_decision = 'ok'
 
     def check_velocity(self, qvel):
@@ -77,8 +76,7 @@ class SafetyChecker:
 
         max_acc = float(np.max(np.abs(qacc[:self.n_joints])))
 
-        # A single contact/release impulse is common in MuJoCo. Treat very high
-        # spikes as emergency only if they persist across multiple cycles.
+    
         if max_acc >= float(self.config.acceleration_emergency_threshold):
             self._acc_emergency_count += 1
             if self._acc_emergency_count >= int(getattr(self.config, "acceleration_emergency_consecutive", 3)):
@@ -97,7 +95,7 @@ class SafetyChecker:
         return True
     
     def check_jacobian(self, J):
-        # returns True if jacobian condition and manipulability are OK
+        
         if J is None:
             return True, {'cond': None, 'manip': None}
 
@@ -115,9 +113,9 @@ class SafetyChecker:
 
         sigma_max = float(sv[0])
         sigma_min = float(sv[-1])
-        # condition number (guard against zero division)
+        
         cond = float('inf') if sigma_min == 0.0 else sigma_max / sigma_min
-        # manipulability proxy: smallest singular value
+     
         manip = sigma_min
         cond_ok = cond <= float(self.config.cond_threshold_stop)
         manip_ok = manip >= float(self.config.manip_threshold_stop)
