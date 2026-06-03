@@ -7,7 +7,7 @@ def generate_launch_description():
         Node(
             package='touch_ros2_driver',
             executable='touch_node',
-            name='orientation_test',
+            name='touch_node',
             output='screen'
         ),
         # Lancement de RViz2
