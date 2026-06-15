@@ -43,12 +43,6 @@ ament_target_dependencies(orientation_test_node
 )
 
 
-
-
-
-
-
-
 target_link_libraries(touch_node 
     /home/luca/Master/openhaptics_3.4-0-developer-edition-amd64/usr/lib/libHD.so
     /home/luca/Master/openhaptics_3.4-0-developer-edition-amd64/usr/lib/libHL.so

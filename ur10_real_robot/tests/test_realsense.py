@@ -6,7 +6,7 @@ import json
 import time
 
 
-CONFIG_PATH = "/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/scripts/realsense/config/d435i_config.json"
+CONFIG_PATH = "/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/camera/config/d435i_config.json"
 
 def get_first_realsense_device():
     ctx = rs.context()

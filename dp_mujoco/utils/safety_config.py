@@ -6,7 +6,7 @@ import numpy as np
 @dataclass
 class SafetyConfig:
     safety_velocity: float = 0.81
-    safety_acceleration: float = 10.0
+    safety_acceleration: float = 1000.0
     jacobian_threshold: float = 700.0
     # Jacobian / condition thresholds
     
@@ -16,9 +16,9 @@ class SafetyConfig:
    
     velocity_stop_threshold: float = 1.0
     
-    acceleration_stop_threshold: float = 50.0
+    acceleration_stop_threshold: float = 1000.0
     #TODO needs to be changed on real robot
-    acceleration_emergency_threshold: float = 100.0
+    acceleration_emergency_threshold: float = 1000.0
     acceleration_filter_window: int = 5
     acceleration_emergency_consecutive: int = 3
 

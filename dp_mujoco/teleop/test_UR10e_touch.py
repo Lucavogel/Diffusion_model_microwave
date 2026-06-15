@@ -7,8 +7,11 @@ import time
 import sys
 import os
 
-# Ajout du chemin vers diffusion_policy
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../diffusion_policy")))
+sys.path.append(
+    os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "../../diffusion_policy")
+    )
+)
 
 try:
     from diffusion_policy.common.replay_buffer import ReplayBuffer
@@ -31,10 +34,10 @@ from dp_mujoco.policy_exec.pose_utils import orientation_error
 from dp_mujoco.teleop.teleop_target_listener import TeleopTargetListener
 
 from dp_mujoco.env.mujoco_env import MujocoEnv
-from dp_mujoco.policy_exec.servo_controller import ServoController
 from dp_mujoco.teleop.teleop_episode_recorder import TeleopEpisodeRecorder
 
 from dp_mujoco.utils.safety_config import SafetyChecker, SafetyConfig
+from dp_mujoco.policy_exec.servo_controller_pinocchio import PinocchioServoController
 
 
 MODEL_PATH = Path(
@@ -42,32 +45,59 @@ MODEL_PATH = Path(
     "dp_mujoco/models/universal_robots_ur10e/scene_microwave_camera.xml"
 )
 
+URDF_PATH = (
+    "/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/"
+    "dp_mujoco/models/universal_robots_ur10e/ur10.urdf"
+)
 
-def ros_spin_thread(node: Node):
+
+def ros_spin_thread(node: Node) -> None:
     rclpy.spin(node)
 
 
 def make_safety_checker(home_q: np.ndarray) -> SafetyChecker:
-    """
-    Crée un SafetyChecker assez permissif pour la simulation.
-    Les seuils pourront être resserrés ensuite.
-    """
     safety_config = SafetyConfig(
         velocity_stop_threshold=1.2,
         acceleration_stop_threshold=80.0,
         acceleration_emergency_threshold=150.0,
         acceleration_filter_window=5,
         acceleration_emergency_consecutive=3,
-
         cond_threshold_stop=1000.0,
         manip_threshold_stop=1e-6,
-
         consecutive_stop_count=20,
         consecutive_recover_count=10,
         metrics_history_size=200,
     )
 
     return SafetyChecker(config=safety_config, q=home_q)
+
+
+def hard_reset_robot(
+    model: mujoco.MjModel,
+    data: mujoco.MjData,
+    env: MujocoEnv,
+    home_q: np.ndarray,
+    gripper_q: float = -0.2,
+    settle_steps: int = 50,
+) -> None:
+    env.reset(home_q=home_q, gripper_q=gripper_q)
+
+    data.qpos[:6] = home_q
+    data.qvel[:] = 0.0
+    data.ctrl[:6] = home_q
+    if model.nu >= 7:
+        data.ctrl[6] = gripper_q
+
+    mujoco.mj_forward(model, data)
+
+    for _ in range(settle_steps):
+        data.ctrl[:6] = home_q
+        if model.nu >= 7:
+            data.ctrl[6] = gripper_q
+        mujoco.mj_step(model, data)
+
+    data.qvel[:] = 0.0
+    mujoco.mj_forward(model, data)
 
 
 def main() -> None:
@@ -88,22 +118,59 @@ def main() -> None:
     model = env.model
     data = env.data
 
-    home_q = np.array([0.0, -1.3, 1.8, -0.22, 1.57, 0.0], dtype=float)
-
-    servo = ServoController(
-        home_q=home_q,
-        kp_pos=5.0,
-        kp_rot=3.0,
-        max_joint_vel=0.5,
-        alpha_dq=0.2,
-        alpha_grip=1.0,
-        pos_deadzone=0.0025,
-        rot_deadzone=0.03,
+    home_q = np.array(
+        [0.0, -1.3, 1.8, -0.22, 1.57, 0.0],
+        dtype=np.float64,
     )
 
-    safety_checker = make_safety_checker(home_q)
+    hard_reset_robot(
+        model=model,
+        data=data,
+        env=env,
+        home_q=home_q,
+        gripper_q=-0.2,
+    )
+    q_before = data.qpos[:6].copy()
 
-    env.reset(home_q=home_q, gripper_q=-0.2)
+    for _ in range(300):
+        data.ctrl[:6] = home_q
+        if model.nu >= 7:
+            data.ctrl[6] = -0.2
+        mujoco.mj_step(model, data)
+
+    q_after = data.qpos[:6].copy()
+
+    print("SAG TEST")
+    print("q_before:", q_before)
+    print("q_after :", q_after)
+    print("diff    :", q_after - q_before)
+
+    servo = PinocchioServoController(
+        urdf_path=URDF_PATH,
+        home_q=home_q,
+        ee_frame_name="tool0",
+        tcp_offset_pos=np.array([0.0, 0.0, 0.24], dtype=np.float64),
+        base_offset_pos=np.array([0.0, 0.0, 0.4], dtype=np.float64),
+        joint_min=env.joint_min,
+        joint_max=env.joint_max,
+        kp_pos=5.0,
+        kp_rot=2.0,
+        damping=0.05,
+        max_joint_vel=0.8,
+        alpha_dq=0.25,
+    )
+
+    mujoco_start_pos = env.get_eef_pos()
+
+    pin_start_pos, pin_start_rot, pin_J = servo.kin.forward_and_jacobian(home_q)
+
+    print("START mujoco grasp_pos :", mujoco_start_pos)
+    print("START pinocchio tcp_pos:", pin_start_pos)
+    print("START diff mujoco-pin  :", mujoco_start_pos - pin_start_pos)
+
+    servo.reset(home_q)
+
+    safety_checker = make_safety_checker(home_q)
 
     q_hold = home_q.copy()
     gripper_hold = -0.2
@@ -115,10 +182,9 @@ def main() -> None:
     safety_stop_triggered = False
     safety_stop_reason = ""
 
-    SAFETY_POS_ERROR_STOP = 0.25  # 25 cm
-    SAFETY_ROT_ERROR_STOP = 0.80  # environ 45 degrés
+    SAFETY_POS_ERROR_STOP = 0.25
+    SAFETY_ROT_ERROR_STOP = 0.80
 
-    # Physique MuJoCo : normalement 0.002 s => 500 Hz
     dt = float(model.opt.timestep)
     print(f"Simulation timestep (dt) : {dt:.4f} s")
 
@@ -129,10 +195,10 @@ def main() -> None:
     if ros_node.free_camera_flag:
         viewer = mujoco.viewer.launch_passive(model, data)
     else:
-        WIDTH = 640
-        HEIGHT = 480
-        renderer_front = mujoco.Renderer(model, height=HEIGHT, width=WIDTH)
-        renderer_top = mujoco.Renderer(model, height=HEIGHT, width=WIDTH)
+        width = 640
+        height = 480
+        renderer_front = mujoco.Renderer(model, height=height, width=width)
+        renderer_top = mujoco.Renderer(model, height=height, width=width)
 
     recorder = TeleopEpisodeRecorder(record_freq=10.0)
 
@@ -196,17 +262,13 @@ def main() -> None:
         last_space_press = 0.0
         prev_sim_time = data.time
 
-        # Rendu OpenCV à 60 Hz
         render_hz = 60.0
         render_period = 1.0 / render_hz
 
-        # Lecture target Touch à 10 Hz.
-        # Attention : ce n'est PAS la fréquence du servo IK.
         control_hz = 10.0
         control_period = 1.0 / control_hz
         last_control_time = time.time()
 
-        # Target bloquée / échantillonnée à 10 Hz
         latched_target_pos = None
         latched_target_rot = None
         latched_gripper_cmd = -0.2
@@ -220,14 +282,18 @@ def main() -> None:
             if viewer is not None and not viewer.is_running():
                 break
 
-            # --------------------------------------------------
-            # RESET MUJOCO AUTO
-            # --------------------------------------------------
             if data.time < prev_sim_time:
                 mujoco.mj_resetData(model, data)
 
-                env.reset(home_q, gripper_q=-0.2)
-                servo.reset(home_q, gripper_cmd=-0.2)
+                hard_reset_robot(
+                    model=model,
+                    data=data,
+                    env=env,
+                    home_q=home_q,
+                    gripper_q=-0.2,
+                )
+
+                servo.reset(home_q)
                 safety_checker = make_safety_checker(home_q)
 
                 q_hold = home_q.copy()
@@ -250,18 +316,12 @@ def main() -> None:
                 randomize_microwave_objects(model, data)
                 mujoco.mj_forward(model, data)
 
-                env.apply_joint_command(q_hold, gripper_command=gripper_hold)
-                mujoco.mj_forward(model, data)
-
                 print(">>> RESET MUJOCO DÉTECTÉ AVEC VARIATION DES OBJETS <<<")
 
             prev_sim_time = data.time
 
             step_start = time.time()
 
-            # --------------------------------------------------
-            # LECTURE TOUCH / TARGET A 10 Hz SEULEMENT
-            # --------------------------------------------------
             now_control = time.time()
 
             if now_control - last_control_time >= control_period:
@@ -275,16 +335,12 @@ def main() -> None:
 
                 last_control_time = now_control
 
-            # --------------------------------------------------
-            # SERVO IK A 500 Hz + SAFETY CHECKER
-            # --------------------------------------------------
             if safety_stop_triggered:
                 if time.time() - last_print > 0.5:
                     print(f"[SAFETY STOP] {safety_stop_reason}")
                     last_print = time.time()
 
             elif latched_target_pos is None or latched_target_rot is None:
-                # Pas de target active : on garde la dernière commande stable.
                 pass
 
             else:
@@ -311,21 +367,20 @@ def main() -> None:
                     last_print = time.time()
 
                 else:
-                    servo_out = servo.compute(
-                        model=model,
-                        data=data,
-                        grasp_site_id=env.grasp_site_id,
-                        joint_min=env.joint_min,
-                        joint_max=env.joint_max,
+                    q_current = data.qpos[:6].copy()
+
+                    q_target_candidate, servo_info = servo.compute(
+                        q_current=q_current,
                         target_pos=latched_target_pos,
                         target_rot=latched_target_rot,
-                        gripper_cmd=latched_gripper_cmd,
+                        dt=dt,
                     )
 
-                    # --------------------------------------------------
-                    # SAFETY CHECKER APRES SERVO COMPUTE
-                    # --------------------------------------------------
-                    J = servo_out.get("J", None)
+                    smooth_gripper_cmd_candidate = float(
+                        np.clip(latched_gripper_cmd, -0.2, 1.2)
+                    )
+
+                    J = servo_info.get("J", None)
 
                     if data.qvel is not None and data.qvel.size >= 6:
                         qvel = data.qvel[:6].copy()
@@ -357,21 +412,24 @@ def main() -> None:
                         last_print = time.time()
 
                     else:
-                        q_target = servo_out["q_target"]
-                        smooth_gripper_cmd = float(servo_out["gripper_cmd"])
+                        q_target = q_target_candidate
+                        smooth_gripper_cmd = smooth_gripper_cmd_candidate
 
-                        # On accepte la nouvelle commande seulement si SafetyChecker est OK.
                         q_hold = q_target.copy()
                         gripper_hold = smooth_gripper_cmd
 
                         if time.time() - last_print > 0.5:
-                            print(f"target_pos: {latched_target_pos}")
-                            print(f"grasp_pos : {grasp_pos}")
-                            print(f"pos_err   : {servo_out['pos_err']}")
-                            print(f"rot_err   : {servo_out['rot_err']}")
-                            print(f"gripper   : {smooth_gripper_cmd}")
-                            print(f"safety    : {safety_result['reason']}")
-                            print(f"metrics   : {safety_result['metrics']}")
+                            print(f"target_pos      : {latched_target_pos}")
+                            print(f"mujoco_grasp_pos: {grasp_pos}")
+                            print(f"pin_current_pos : {servo_info['current_pos']}")
+                            print(f"pin_pos_err     : {servo_info['pos_err']}")
+                            print(f"pin_rot_err     : {servo_info['rot_err']}")
+                            print(f"pin_cond        : {servo_info['cond']}")
+                            print(f"gripper         : {smooth_gripper_cmd}")
+                            print(f"safety          : {safety_result['reason']}")
+                            print(f"metrics         : {safety_result['metrics']}")
+                            print(f"pin_dq          : {servo_info['dq']}")
+                            print(f"delta_q         : {q_target_candidate - q_current}")
 
                             try:
                                 print(f"qpos[:6]  : {data.qpos[:6]}")
@@ -385,15 +443,9 @@ def main() -> None:
                             print("-" * 60)
                             last_print = time.time()
 
-            # --------------------------------------------------
-            # PHYSIQUE MUJOCO A 500 Hz
-            # --------------------------------------------------
             env.apply_joint_command(q_hold, gripper_command=gripper_hold)
             env.step()
 
-            # --------------------------------------------------
-            # RENDU A 60 Hz + CLAVIER + RECORDING
-            # --------------------------------------------------
             now = time.time()
 
             if now - last_render >= render_period:
@@ -479,13 +531,10 @@ def main() -> None:
                     key = cv2.waitKey(1) & 0xFF
 
                     if key == 27:
-                        # ECHAP
                         break
 
                     elif key == 32:
-                        # ESPACE -> Démarrer ou Valider l'enregistrement
                         if time.time() - last_space_press > 0.5:
-
                             if not recorder.is_recording:
                                 recorder.start()
 
@@ -517,7 +566,9 @@ def main() -> None:
                                         )
 
                                         try:
-                                            saved_episodes_total = int(replay_buffer.n_episodes)
+                                            saved_episodes_total = int(
+                                                replay_buffer.n_episodes
+                                            )
                                         except Exception:
                                             pass
 
@@ -525,7 +576,8 @@ def main() -> None:
 
                                         print(
                                             f"Trajectoire enregistrée. "
-                                            f"({len(recorder)} pas, {saved_episodes_total} épisodes totaux "
+                                            f"({len(recorder)} pas, "
+                                            f"{saved_episodes_total} épisodes totaux "
                                             f"(+{saved_episodes_session} cette session))"
                                         )
 
@@ -533,21 +585,28 @@ def main() -> None:
                                         print("Erreur: pas de ReplayBuffer disponible.")
 
                                 else:
-                                    print("Erreur : La trajectoire était vide, non sauvegardée.")
+                                    print(
+                                        "Erreur : La trajectoire était vide, non sauvegardée."
+                                    )
 
                             last_space_press = time.time()
 
                     elif key == 8 or key == 127:
-                        # SUPPR / BACKSPACE
                         if recorder.is_recording:
                             recorder.cancel()
 
                     elif key == ord("r"):
-                        # Reset de la simulation et robot au départ
                         mujoco.mj_resetData(model, data)
 
-                        env.reset(home_q, gripper_q=-0.2)
-                        servo.reset(home_q, gripper_cmd=-0.2)
+                        hard_reset_robot(
+                            model=model,
+                            data=data,
+                            env=env,
+                            home_q=home_q,
+                            gripper_q=-0.2,
+                        )
+
+                        servo.reset(home_q)
                         safety_checker = make_safety_checker(home_q)
 
                         q_hold = home_q.copy()
@@ -570,16 +629,12 @@ def main() -> None:
                         randomize_microwave_objects(model, data)
                         mujoco.mj_forward(model, data)
 
-                        env.apply_joint_command(q_hold, gripper_command=gripper_hold)
-                        mujoco.mj_forward(model, data)
-
                         print("\n>>> SIMULATION RÉINITIALISÉE AVEC VARIATION DES OBJETS ! <<<")
 
                         if recorder.is_recording:
                             print("[!] Enregistrement annulé car la simulation a été reset [!]")
                             recorder.cancel()
 
-                # Recording à 10 Hz via TeleopEpisodeRecorder
                 if renderer_front is not None and renderer_top is not None:
                     recorder.record_if_needed(
                         env=env,
@@ -592,9 +647,6 @@ def main() -> None:
 
                 last_render = time.time()
 
-            # --------------------------------------------------
-            # SYNCHRO TEMPS REEL MUJOCO
-            # --------------------------------------------------
             elapsed = time.time() - step_start
 
             if elapsed < dt:

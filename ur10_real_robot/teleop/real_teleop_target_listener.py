@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import threading
+from typing import Optional
+
 import numpy as np
-import rclpy
+
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy, DurabilityPolicy
+
 from geometry_msgs.msg import PoseStamped
 from std_msgs.msg import Int8, Float32
 
@@ -28,9 +31,35 @@ def project_to_so3(R: np.ndarray) -> np.ndarray:
     return R_proj
 
 
-class TeleopTargetListener(Node):
-    def __init__(self) -> None:
-        super().__init__("teleop_target_listener")
+class RealTeleopTargetListener(Node):
+    """
+    Version robot réel basée sur la version simulation validée.
+
+    Différence avec la simulation :
+    - pas de initial_robot_pos / initial_robot_rot hardcodés
+    - il faut appeler set_robot_reference(pos, rot)
+      avec la pose TCP actuelle du vrai robot calculée par Pinocchio
+
+    Cette classe ne commande PAS le robot.
+    Elle produit seulement :
+    - target_pos
+    - target_rot
+    - gripper_cmd
+    """
+
+    def __init__(
+        self,
+        initial_robot_pos: Optional[np.ndarray] = None,
+        initial_robot_rot: Optional[np.ndarray] = None,
+        position_scale: float = 0.4,
+        max_target_speed: float = 0.30,
+        target_filter_alpha_pos: float = 0.25,
+        target_filter_alpha_rot: float = 0.15,
+        gripper_min: float = -0.2,
+        gripper_max: float = 1.2,
+        gripper_speed: float = 0.5,
+    ) -> None:
+        super().__init__("real_teleop_target_listener")
 
         self.free_camera_flag = False
 
@@ -39,59 +68,52 @@ class TeleopTargetListener(Node):
         # --------------------------------------------------
         # Target robot
         # --------------------------------------------------
-        self.target_pos = None
-        self.target_rot = None
+        self.target_pos: Optional[np.ndarray] = None
+        self.target_rot: Optional[np.ndarray] = None
 
         # Target brute avant filtrage
-        self.target_raw_pos = None
-        self.target_raw_rot = None
+        self.target_raw_pos: Optional[np.ndarray] = None
+        self.target_raw_rot: Optional[np.ndarray] = None
 
-        self.gripper_cmd = -0.2
+        self.gripper_cmd = float(gripper_min)
 
         # --------------------------------------------------
         # Mapping Touch -> robot
         # --------------------------------------------------
-        self.position_scale = 0.4
+        self.position_scale = float(position_scale)
 
-        self.initial_robot_pos = np.array(
-            [0.95323795, 0.16420554, 0.63962294],
-            dtype=np.float64,
+        self.initial_robot_pos = (
+            np.asarray(initial_robot_pos, dtype=np.float64).reshape(3).copy()
+            if initial_robot_pos is not None
+            else None
         )
 
-        self.initial_robot_rot = np.array(
-            [
-                [-7.65314116e-04, 2.76355649e-01, 9.61055134e-01],
-                [9.99999683e-01, 0.00000000e+00, 7.96326711e-04],
-                [2.20069385e-04, 9.61055438e-01, -2.76355561e-01],
-            ],
-            dtype=np.float64,
+        self.initial_robot_rot = (
+            project_to_so3(np.asarray(initial_robot_rot, dtype=np.float64).reshape(3, 3))
+            if initial_robot_rot is not None
+            else None
         )
 
-        self.initial_robot_rot = project_to_so3(self.initial_robot_rot)
-
-        self.prev_touch_pos = None
-        self.prev_touch_rot = None
+        self.prev_touch_pos: Optional[np.ndarray] = None
+        self.prev_touch_rot: Optional[np.ndarray] = None
         self.touch_initialized = False
 
         # --------------------------------------------------
-        # Nouveaux paramètres à tester en simulation
+        # Paramètres validés en simulation
         # --------------------------------------------------
 
         # Limite de vitesse cartésienne de la target en m/s.
-        # Ça limite la vitesse de déplacement de target_raw_pos.
         # Ce n'est PAS pareil que max_joint_vel dans le servo.
-        self.max_target_speed = 0.30
+        self.max_target_speed = float(max_target_speed)
 
         # Filtre position :
         # 1.0 = pas de filtre
-        # 0.3 = fluide mais réactif
-        # 0.2 = plus smooth
-        # 0.1 = très smooth mais plus lent
-        self.target_filter_alpha_pos = 0.25
+        # 0.25 = fluide mais encore réactif
+        self.target_filter_alpha_pos = float(target_filter_alpha_pos)
 
         # Filtre orientation :
-        # utile seulement si kp_rot > 0 dans le servo.
-        self.target_filter_alpha_rot = 0.15
+        # utile seulement si kp_rot > 0 côté servo.
+        self.target_filter_alpha_rot = float(target_filter_alpha_rot)
 
         self.last_pose_time = self.get_clock().now()
 
@@ -99,8 +121,12 @@ class TeleopTargetListener(Node):
         # Gripper
         # --------------------------------------------------
         self.current_buttons = 0
-        self.gripper_speed = 0.5
-        self.gripper_value = -0.2
+
+        self.gripper_min = float(gripper_min)
+        self.gripper_max = float(gripper_max)
+        self.gripper_speed = float(gripper_speed)
+
+        self.gripper_value = float(gripper_min)
         self.last_gripper_time = self.get_clock().now()
 
         sensor_qos = QoSProfile(
@@ -136,11 +162,50 @@ class TeleopTargetListener(Node):
             self.update_gripper,
         )
 
-    def reset_after_sim_reset(self) -> None:
+    def set_robot_reference(self, pos: np.ndarray, rot: np.ndarray) -> None:
+        """
+        Définit la pose TCP de référence du vrai robot.
+
+        À appeler au démarrage avec la pose actuelle calculée par Pinocchio :
+
+            q_current = robot.get_joint_positions()
+            pos, rot, _ = servo.kin.forward_and_jacobian(q_current)
+            listener.set_robot_reference(pos, rot)
+
+        pos et rot doivent être dans le repère base robot.
+        """
+        with self.lock:
+            self.initial_robot_pos = np.asarray(pos, dtype=np.float64).reshape(3).copy()
+            self.initial_robot_rot = project_to_so3(
+                np.asarray(rot, dtype=np.float64).reshape(3, 3)
+            )
+
+            self.target_pos = None
+            self.target_rot = None
+
+            self.target_raw_pos = None
+            self.target_raw_rot = None
+
+            self.prev_touch_pos = None
+            self.prev_touch_rot = None
+            self.touch_initialized = False
+
+            self.last_pose_time = self.get_clock().now()
+
+            try:
+                self.get_logger().info("Robot reference pose updated.")
+            except Exception:
+                pass
+
+    def reset_after_robot_reset(self) -> None:
+        """
+        Même logique que reset_after_sim_reset().
+        À appeler si tu recales/recentres le robot.
+        """
         with self.lock:
             self.current_buttons = 0
-            self.gripper_value = -0.2
-            self.gripper_cmd = -0.2
+            self.gripper_value = self.gripper_min
+            self.gripper_cmd = self.gripper_min
             self.last_gripper_time = self.get_clock().now()
 
             self.target_pos = None
@@ -184,6 +249,9 @@ class TeleopTargetListener(Node):
             if dt <= 1e-6 or dt > 0.5:
                 dt = 0.01
 
+            if self.initial_robot_pos is None or self.initial_robot_rot is None:
+                return
+
             if not self.touch_initialized:
                 self.prev_touch_pos = touch_pos.copy()
                 self.prev_touch_rot = touch_rot.copy()
@@ -198,7 +266,7 @@ class TeleopTargetListener(Node):
 
                 try:
                     self.get_logger().info(
-                        "Première pose touch reçue : référence initialisée."
+                        "Première pose Touch reçue : référence robot réel initialisée."
                     )
                 except Exception:
                     pass
@@ -206,7 +274,7 @@ class TeleopTargetListener(Node):
                 return
 
             # --------------------------------------------------
-            # 1. Différentiel de position Touch -> robot
+            # 1. Différentiel position Touch -> robot
             # --------------------------------------------------
             dpos_touch = touch_pos - self.prev_touch_pos
             dpos_robot = self.position_scale * dpos_touch
@@ -220,18 +288,17 @@ class TeleopTargetListener(Node):
             if step_norm > max_step and step_norm > 1e-12:
                 dpos_robot = dpos_robot * (max_step / step_norm)
 
-            # Target brute limitée en vitesse
             self.target_raw_pos = self.target_raw_pos + dpos_robot
 
             # --------------------------------------------------
-            # 3. Différentiel de rotation
+            # 3. Différentiel orientation
             # --------------------------------------------------
             delta_rot = touch_rot @ self.prev_touch_rot.T
             self.target_raw_rot = delta_rot @ self.target_raw_rot
             self.target_raw_rot = project_to_so3(self.target_raw_rot)
 
             # --------------------------------------------------
-            # 4. Filtre position target_alpha
+            # 4. Filtre position
             # --------------------------------------------------
             alpha_pos = float(np.clip(self.target_filter_alpha_pos, 0.0, 1.0))
 
@@ -257,8 +324,11 @@ class TeleopTargetListener(Node):
 
     def gripper_cb(self, msg: Float32) -> None:
         with self.lock:
-            self.gripper_cmd = float(msg.data)
-            self.gripper_value = float(msg.data)
+            value = float(msg.data)
+            value = max(self.gripper_min, min(self.gripper_max, value))
+
+            self.gripper_cmd = value
+            self.gripper_value = value
 
     def buttons_cb(self, msg: Int8) -> None:
         with self.lock:
@@ -278,7 +348,11 @@ class TeleopTargetListener(Node):
             elif self.current_buttons == -1:
                 self.gripper_value += self.gripper_speed * dt
 
-            self.gripper_value = max(-0.2, min(1.2, self.gripper_value))
+            self.gripper_value = max(
+                self.gripper_min,
+                min(self.gripper_max, self.gripper_value),
+            )
+
             self.gripper_cmd = float(self.gripper_value)
 
     def get_target(self):
@@ -293,6 +367,10 @@ class TeleopTargetListener(Node):
             )
 
     def sync_to_pose(self, pos: np.ndarray, rot: np.ndarray) -> None:
+        """
+        Force la target à suivre la pose actuelle du robot.
+        À utiliser en pause/safety/stop.
+        """
         with self.lock:
             if self.target_pos is not None and self.target_rot is not None:
                 pos = np.asarray(pos, dtype=np.float64).reshape(3)
@@ -310,6 +388,10 @@ class TeleopTargetListener(Node):
         rot: np.ndarray,
         freeze_alpha: float = 0.15,
     ) -> None:
+        """
+        Même logique que la simulation.
+        Ramène progressivement la target vers la pose réelle du robot.
+        """
         with self.lock:
             if self.target_pos is not None and self.target_rot is not None:
                 pos = np.asarray(pos, dtype=np.float64).reshape(3)
