@@ -7,7 +7,11 @@ from typing import Optional
 
 import cv2
 import numpy as np
-import pyrealsense2 as rs
+
+try:
+    import pyrealsense2 as rs
+except ImportError:
+    rs = None
 
 
 class RealSenseCamera:
@@ -36,6 +40,11 @@ class RealSenseCamera:
         self.started = False
 
     def _get_device(self):
+        if rs is None:
+            raise RuntimeError(
+                "pyrealsense2 is not installed. Use --fake for software tests."
+            )
+
         ctx = rs.context()
         devices = ctx.query_devices()
 
@@ -91,6 +100,11 @@ class RealSenseCamera:
     def start(self) -> None:
         if self.started:
             return
+
+        if rs is None:
+            raise RuntimeError(
+                "pyrealsense2 is not installed. Use --fake for software tests."
+            )
 
         if self.apply_advanced_config:
             self._load_advanced_json_config()

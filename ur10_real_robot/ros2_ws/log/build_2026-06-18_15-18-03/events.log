@@ -1,0 +1,16 @@
+[0.000000] (-) TimerEvent: {}
+[0.001772] (-) JobUnselected: {'identifier': 'bringup_gripper'}
+[0.002000] (-) JobUnselected: {'identifier': 'earth_robot_moveit_config'}
+[0.002038] (-) JobUnselected: {'identifier': 'eurodao_environment_description'}
+[0.002070] (-) JobUnselected: {'identifier': 'eurodao_joystick_teleop'}
+[0.002105] (-) JobUnselected: {'identifier': 'moveit_calibration_gui'}
+[0.002137] (-) JobUnselected: {'identifier': 'moveit_calibration_plugins'}
+[0.002170] (-) JobUnselected: {'identifier': 'onrobot_rg2ft_description'}
+[0.002200] (-) JobUnselected: {'identifier': 'onrobot_rg_msgs'}
+[0.002249] (-) JobUnselected: {'identifier': 'realsense2_description'}
+[0.002288] (-) JobUnselected: {'identifier': 'ur_cb2'}
+[0.002319] (-) JobUnselected: {'identifier': 'ur_robot_description_cb2'}
+[0.002358] (ur_robot_driver_cb2) JobQueued: {'identifier': 'ur_robot_driver_cb2', 'dependencies': OrderedDict([('ur_robot_description_cb2', '/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros1_ws/install/ur_robot_description_cb2')])}
+[0.002406] (ur_robot_driver_cb2) JobStarted: {'identifier': 'ur_robot_driver_cb2'}
+[0.025980] (ur_robot_driver_cb2) JobEnded: {'identifier': 'ur_robot_driver_cb2', 'rc': 1}
+[0.036785] (-) EventReactorShutdown: {}

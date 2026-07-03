@@ -85,6 +85,21 @@ class RobotInterface(ABC):
         """
         pass
 
+    def apply_joint_velocity(
+        self,
+        qd_target: np.ndarray,
+        gripper_command: Optional[float] = None,
+    ) -> None:
+        """
+        Optional joint velocity command, shape (6,), rad/s.
+
+        Backends that do not support velocity control can keep the position
+        command path. Real CB2 speedj teleop overrides this method.
+        """
+        raise NotImplementedError(
+            f"{type(self).__name__} does not implement apply_joint_velocity()."
+        )
+
     def get_state(self) -> dict[str, np.ndarray]:
         """
         Return common robot state.

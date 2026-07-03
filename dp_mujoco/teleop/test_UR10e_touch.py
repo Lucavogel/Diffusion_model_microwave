@@ -47,7 +47,7 @@ MODEL_PATH = Path(
 
 URDF_PATH = (
     "/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/"
-    "dp_mujoco/models/universal_robots_ur10e/ur10.urdf"
+    "dp_mujoco/models/universal_robots_ur10e/ur10_d455_support_rg2ft_fixed_gripper.urdf"
 )
 
 

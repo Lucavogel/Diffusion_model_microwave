@@ -1,0 +1,170 @@
+[  2%] Built target onrobot_rg_msgs__rs
+[  7%] Built target onrobot_rg_msgs__cpp
+[ 15%] Built target onrobot_rg_msgs__rosidl_generator_c
+[ 15%] Built target ament_cmake_python_copy_onrobot_rg_msgs
+[ 25%] Built target onrobot_rg_msgs__rosidl_typesupport_c
+[ 35%] Built target onrobot_rg_msgs__rosidl_typesupport_fastrtps_c
+[ 45%] Built target onrobot_rg_msgs__rosidl_typesupport_introspection_c
+[ 55%] Built target onrobot_rg_msgs__rosidl_typesupport_cpp
+[ 67%] Built target onrobot_rg_msgs__rosidl_typesupport_introspection_cpp
+[ 75%] Built target onrobot_rg_msgs__rosidl_typesupport_fastrtps_cpp
+[ 75%] Built target onrobot_rg_msgs
+[ 77%] Built target onrobot_rg_msgs__py
+[ 85%] Built target onrobot_rg_msgs__rosidl_generator_py
+[100%] Built target onrobot_rg_msgs__rosidl_typesupport_introspection_c__pyext
+[100%] Built target onrobot_rg_msgs__rosidl_typesupport_c__pyext
+[100%] Built target onrobot_rg_msgs__rosidl_typesupport_fastrtps_c__pyext
+running egg_info
+writing onrobot_rg_msgs.egg-info/PKG-INFO
+writing dependency_links to onrobot_rg_msgs.egg-info/dependency_links.txt
+writing top-level names to onrobot_rg_msgs.egg-info/top_level.txt
+reading manifest file 'onrobot_rg_msgs.egg-info/SOURCES.txt'
+writing manifest file 'onrobot_rg_msgs.egg-info/SOURCES.txt'
+[100%] Built target ament_cmake_python_build_onrobot_rg_msgs_egg
+-- Install configuration: ""
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/share/ament_index/resource_index/rosidl_interfaces/onrobot_rg_msgs
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/include/onrobot_rg_msgs/onrobot_rg_msgs
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/include/onrobot_rg_msgs/onrobot_rg_msgs/msg
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/include/onrobot_rg_msgs/onrobot_rg_msgs/msg/on_robot_rg_output.h
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/include/onrobot_rg_msgs/onrobot_rg_msgs/msg/rosidl_generator_c__visibility_control.h
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/include/onrobot_rg_msgs/onrobot_rg_msgs/msg/on_robot_rg_input.h
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/include/onrobot_rg_msgs/onrobot_rg_msgs/msg/detail
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/include/onrobot_rg_msgs/onrobot_rg_msgs/msg/detail/on_robot_rg_output__functions.h
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/include/onrobot_rg_msgs/onrobot_rg_msgs/msg/detail/on_robot_rg_input__struct.h
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/include/onrobot_rg_msgs/onrobot_rg_msgs/msg/detail/on_robot_rg_input__functions.h
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/include/onrobot_rg_msgs/onrobot_rg_msgs/msg/detail/on_robot_rg_output__type_support.h
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/include/onrobot_rg_msgs/onrobot_rg_msgs/msg/detail/on_robot_rg_output__functions.c
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/include/onrobot_rg_msgs/onrobot_rg_msgs/msg/detail/on_robot_rg_input__functions.c
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/include/onrobot_rg_msgs/onrobot_rg_msgs/msg/detail/on_robot_rg_output__struct.h
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/include/onrobot_rg_msgs/onrobot_rg_msgs/msg/detail/on_robot_rg_input__type_support.h
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/share/onrobot_rg_msgs/environment/library_path.sh
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/share/onrobot_rg_msgs/environment/library_path.dsv
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/lib/libonrobot_rg_msgs__rosidl_generator_c.so
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/include/onrobot_rg_msgs/onrobot_rg_msgs
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/include/onrobot_rg_msgs/onrobot_rg_msgs/msg
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/include/onrobot_rg_msgs/onrobot_rg_msgs/msg/detail
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/include/onrobot_rg_msgs/onrobot_rg_msgs/msg/detail/on_robot_rg_output__rosidl_typesupport_fastrtps_c.h
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/include/onrobot_rg_msgs/onrobot_rg_msgs/msg/detail/on_robot_rg_input__rosidl_typesupport_fastrtps_c.h
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/include/onrobot_rg_msgs/onrobot_rg_msgs/msg/rosidl_typesupport_fastrtps_c__visibility_control.h
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/lib/libonrobot_rg_msgs__rosidl_typesupport_fastrtps_c.so
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/include/onrobot_rg_msgs/onrobot_rg_msgs
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/include/onrobot_rg_msgs/onrobot_rg_msgs/msg
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/include/onrobot_rg_msgs/onrobot_rg_msgs/msg/on_robot_rg_output.hpp
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/include/onrobot_rg_msgs/onrobot_rg_msgs/msg/on_robot_rg_input.hpp
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/include/onrobot_rg_msgs/onrobot_rg_msgs/msg/rosidl_generator_cpp__visibility_control.hpp
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/include/onrobot_rg_msgs/onrobot_rg_msgs/msg/detail
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/include/onrobot_rg_msgs/onrobot_rg_msgs/msg/detail/on_robot_rg_output__type_support.hpp
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/include/onrobot_rg_msgs/onrobot_rg_msgs/msg/detail/on_robot_rg_input__traits.hpp
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/include/onrobot_rg_msgs/onrobot_rg_msgs/msg/detail/on_robot_rg_output__struct.hpp
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/include/onrobot_rg_msgs/onrobot_rg_msgs/msg/detail/on_robot_rg_input__struct.hpp
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/include/onrobot_rg_msgs/onrobot_rg_msgs/msg/detail/on_robot_rg_output__builder.hpp
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/include/onrobot_rg_msgs/onrobot_rg_msgs/msg/detail/on_robot_rg_input__builder.hpp
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/include/onrobot_rg_msgs/onrobot_rg_msgs/msg/detail/on_robot_rg_output__traits.hpp
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/include/onrobot_rg_msgs/onrobot_rg_msgs/msg/detail/on_robot_rg_input__type_support.hpp
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/include/onrobot_rg_msgs/onrobot_rg_msgs
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/include/onrobot_rg_msgs/onrobot_rg_msgs/msg
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/include/onrobot_rg_msgs/onrobot_rg_msgs/msg/rosidl_typesupport_fastrtps_cpp__visibility_control.h
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/include/onrobot_rg_msgs/onrobot_rg_msgs/msg/detail
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/include/onrobot_rg_msgs/onrobot_rg_msgs/msg/detail/on_robot_rg_output__rosidl_typesupport_fastrtps_cpp.hpp
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/include/onrobot_rg_msgs/onrobot_rg_msgs/msg/detail/on_robot_rg_input__rosidl_typesupport_fastrtps_cpp.hpp
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/include/onrobot_rg_msgs/onrobot_rg_msgs/msg/detail/dds_fastrtps
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/lib/libonrobot_rg_msgs__rosidl_typesupport_fastrtps_cpp.so
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/include/onrobot_rg_msgs/onrobot_rg_msgs
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/include/onrobot_rg_msgs/onrobot_rg_msgs/msg
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/include/onrobot_rg_msgs/onrobot_rg_msgs/msg/rosidl_typesupport_introspection_c__visibility_control.h
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/include/onrobot_rg_msgs/onrobot_rg_msgs/msg/detail
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/include/onrobot_rg_msgs/onrobot_rg_msgs/msg/detail/on_robot_rg_input__rosidl_typesupport_introspection_c.h
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/include/onrobot_rg_msgs/onrobot_rg_msgs/msg/detail/on_robot_rg_output__type_support.c
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/include/onrobot_rg_msgs/onrobot_rg_msgs/msg/detail/on_robot_rg_output__rosidl_typesupport_introspection_c.h
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/include/onrobot_rg_msgs/onrobot_rg_msgs/msg/detail/on_robot_rg_input__type_support.c
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/lib/libonrobot_rg_msgs__rosidl_typesupport_introspection_c.so
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/lib/libonrobot_rg_msgs__rosidl_typesupport_c.so
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/include/onrobot_rg_msgs/onrobot_rg_msgs
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/include/onrobot_rg_msgs/onrobot_rg_msgs/msg
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/include/onrobot_rg_msgs/onrobot_rg_msgs/msg/detail
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/include/onrobot_rg_msgs/onrobot_rg_msgs/msg/detail/on_robot_rg_input__type_support.cpp
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/include/onrobot_rg_msgs/onrobot_rg_msgs/msg/detail/on_robot_rg_input__rosidl_typesupport_introspection_cpp.hpp
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/include/onrobot_rg_msgs/onrobot_rg_msgs/msg/detail/on_robot_rg_output__type_support.cpp
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/include/onrobot_rg_msgs/onrobot_rg_msgs/msg/detail/on_robot_rg_output__rosidl_typesupport_introspection_cpp.hpp
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/lib/libonrobot_rg_msgs__rosidl_typesupport_introspection_cpp.so
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/lib/libonrobot_rg_msgs__rosidl_typesupport_cpp.so
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/share/onrobot_rg_msgs/environment/pythonpath.sh
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/share/onrobot_rg_msgs/environment/pythonpath.dsv
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/lib/python3.10/site-packages/onrobot_rg_msgs-1.0.0-py3.10.egg-info
+-- Installing: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/lib/python3.10/site-packages/onrobot_rg_msgs-1.0.0-py3.10.egg-info/PKG-INFO
+-- Installing: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/lib/python3.10/site-packages/onrobot_rg_msgs-1.0.0-py3.10.egg-info/top_level.txt
+-- Installing: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/lib/python3.10/site-packages/onrobot_rg_msgs-1.0.0-py3.10.egg-info/SOURCES.txt
+-- Installing: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/lib/python3.10/site-packages/onrobot_rg_msgs-1.0.0-py3.10.egg-info/dependency_links.txt
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/lib/python3.10/site-packages/onrobot_rg_msgs
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/lib/python3.10/site-packages/onrobot_rg_msgs/onrobot_rg_msgs_s__rosidl_typesupport_fastrtps_c.cpython-310-x86_64-linux-gnu.so
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/lib/python3.10/site-packages/onrobot_rg_msgs/__init__.py
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/lib/python3.10/site-packages/onrobot_rg_msgs/onrobot_rg_msgs_s__rosidl_typesupport_introspection_c.cpython-310-x86_64-linux-gnu.so
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/lib/python3.10/site-packages/onrobot_rg_msgs/onrobot_rg_msgs_s__rosidl_typesupport_c.cpython-310-x86_64-linux-gnu.so
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/lib/python3.10/site-packages/onrobot_rg_msgs/msg
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/lib/python3.10/site-packages/onrobot_rg_msgs/msg/_on_robot_rg_output_s.c
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/lib/python3.10/site-packages/onrobot_rg_msgs/msg/__init__.py
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/lib/python3.10/site-packages/onrobot_rg_msgs/msg/_on_robot_rg_input.py
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/lib/python3.10/site-packages/onrobot_rg_msgs/msg/_on_robot_rg_input_s.c
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/lib/python3.10/site-packages/onrobot_rg_msgs/msg/_on_robot_rg_output.py
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/lib/python3.10/site-packages/onrobot_rg_msgs/_onrobot_rg_msgs_s.ep.rosidl_typesupport_c.c
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/lib/python3.10/site-packages/onrobot_rg_msgs/_onrobot_rg_msgs_s.ep.rosidl_typesupport_introspection_c.c
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/lib/python3.10/site-packages/onrobot_rg_msgs/libonrobot_rg_msgs__rosidl_generator_py.so
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/lib/python3.10/site-packages/onrobot_rg_msgs/_onrobot_rg_msgs_s.ep.rosidl_typesupport_fastrtps_c.c
+Listing '/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/lib/python3.10/site-packages/onrobot_rg_msgs'...
+Listing '/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/lib/python3.10/site-packages/onrobot_rg_msgs/msg'...
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/lib/python3.10/site-packages/onrobot_rg_msgs/onrobot_rg_msgs_s__rosidl_typesupport_fastrtps_c.cpython-310-x86_64-linux-gnu.so
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/lib/python3.10/site-packages/onrobot_rg_msgs/onrobot_rg_msgs_s__rosidl_typesupport_introspection_c.cpython-310-x86_64-linux-gnu.so
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/lib/python3.10/site-packages/onrobot_rg_msgs/onrobot_rg_msgs_s__rosidl_typesupport_c.cpython-310-x86_64-linux-gnu.so
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/lib/libonrobot_rg_msgs__rosidl_generator_py.so
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/share/ament_index/resource_index/rust_packages/onrobot_rg_msgs
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/share/onrobot_rg_msgs/rust
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/share/onrobot_rg_msgs/rust/Cargo.toml
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/share/onrobot_rg_msgs/rust/build.rs
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/share/onrobot_rg_msgs/rust/src
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/share/onrobot_rg_msgs/rust/src/msg
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/share/onrobot_rg_msgs/rust/src/msg/rmw.rs
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/share/onrobot_rg_msgs/rust/src/lib.rs
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/share/onrobot_rg_msgs/rust/src/msg.rs
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/share/onrobot_rg_msgs/msg/OnRobotRGInput.idl
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/share/onrobot_rg_msgs/msg/OnRobotRGOutput.idl
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/share/onrobot_rg_msgs/msg/OnRobotRGInput.msg
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/share/onrobot_rg_msgs/msg/OnRobotRGOutput.msg
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/share/ament_index/resource_index/package_run_dependencies/onrobot_rg_msgs
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/share/ament_index/resource_index/parent_prefix_path/onrobot_rg_msgs
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/share/onrobot_rg_msgs/environment/ament_prefix_path.sh
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/share/onrobot_rg_msgs/environment/ament_prefix_path.dsv
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/share/onrobot_rg_msgs/environment/path.sh
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/share/onrobot_rg_msgs/environment/path.dsv
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/share/onrobot_rg_msgs/local_setup.bash
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/share/onrobot_rg_msgs/local_setup.sh
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/share/onrobot_rg_msgs/local_setup.zsh
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/share/onrobot_rg_msgs/local_setup.dsv
+-- Installing: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/share/onrobot_rg_msgs/package.dsv
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/share/ament_index/resource_index/packages/onrobot_rg_msgs
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/share/onrobot_rg_msgs/cmake/export_onrobot_rg_msgs__rosidl_generator_cExport.cmake
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/share/onrobot_rg_msgs/cmake/export_onrobot_rg_msgs__rosidl_generator_cExport-noconfig.cmake
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/share/onrobot_rg_msgs/cmake/export_onrobot_rg_msgs__rosidl_typesupport_fastrtps_cExport.cmake
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/share/onrobot_rg_msgs/cmake/export_onrobot_rg_msgs__rosidl_typesupport_fastrtps_cExport-noconfig.cmake
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/share/onrobot_rg_msgs/cmake/export_onrobot_rg_msgs__rosidl_generator_cppExport.cmake
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/share/onrobot_rg_msgs/cmake/export_onrobot_rg_msgs__rosidl_typesupport_fastrtps_cppExport.cmake
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/share/onrobot_rg_msgs/cmake/export_onrobot_rg_msgs__rosidl_typesupport_fastrtps_cppExport-noconfig.cmake
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/share/onrobot_rg_msgs/cmake/onrobot_rg_msgs__rosidl_typesupport_introspection_cExport.cmake
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/share/onrobot_rg_msgs/cmake/onrobot_rg_msgs__rosidl_typesupport_introspection_cExport-noconfig.cmake
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/share/onrobot_rg_msgs/cmake/onrobot_rg_msgs__rosidl_typesupport_cExport.cmake
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/share/onrobot_rg_msgs/cmake/onrobot_rg_msgs__rosidl_typesupport_cExport-noconfig.cmake
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/share/onrobot_rg_msgs/cmake/onrobot_rg_msgs__rosidl_typesupport_introspection_cppExport.cmake
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/share/onrobot_rg_msgs/cmake/onrobot_rg_msgs__rosidl_typesupport_introspection_cppExport-noconfig.cmake
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/share/onrobot_rg_msgs/cmake/onrobot_rg_msgs__rosidl_typesupport_cppExport.cmake
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/share/onrobot_rg_msgs/cmake/onrobot_rg_msgs__rosidl_typesupport_cppExport-noconfig.cmake
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/share/onrobot_rg_msgs/cmake/export_onrobot_rg_msgs__rosidl_generator_pyExport.cmake
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/share/onrobot_rg_msgs/cmake/export_onrobot_rg_msgs__rosidl_generator_pyExport-noconfig.cmake
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/share/onrobot_rg_msgs/cmake/rosidl_cmake-extras.cmake
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/share/onrobot_rg_msgs/cmake/ament_cmake_export_dependencies-extras.cmake
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/share/onrobot_rg_msgs/cmake/ament_cmake_export_include_directories-extras.cmake
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/share/onrobot_rg_msgs/cmake/ament_cmake_export_libraries-extras.cmake
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/share/onrobot_rg_msgs/cmake/ament_cmake_export_targets-extras.cmake
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/share/onrobot_rg_msgs/cmake/rosidl_cmake_export_typesupport_targets-extras.cmake
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/share/onrobot_rg_msgs/cmake/rosidl_cmake_export_typesupport_libraries-extras.cmake
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/share/onrobot_rg_msgs/cmake/onrobot_rg_msgsConfig.cmake
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/share/onrobot_rg_msgs/cmake/onrobot_rg_msgsConfig-version.cmake
+-- Up-to-date: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs/share/onrobot_rg_msgs/package.xml

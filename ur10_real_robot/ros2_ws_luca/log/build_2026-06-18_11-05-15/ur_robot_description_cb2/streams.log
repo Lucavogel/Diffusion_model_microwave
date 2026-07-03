@@ -1,0 +1,19 @@
+[0.016s] Invoking command in '/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/build/ur_robot_description_cb2': CMAKE_PREFIX_PATH=/opt/ros/humble VIRTUAL_ENV_PROMPT=(mujoco_ros) /usr/bin/cmake /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/src/ur_robot_description_cb2 -DCMAKE_INSTALL_PREFIX=/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/ur_robot_description_cb2
+[0.072s] -- The C compiler identification is GNU 11.4.0
+[0.134s] -- The CXX compiler identification is GNU 11.4.0
+[0.142s] -- Detecting C compiler ABI info
+[0.224s] -- Detecting C compiler ABI info - done
+[0.230s] -- Check for working C compiler: /usr/bin/cc - skipped
+[0.231s] -- Detecting C compile features
+[0.231s] -- Detecting C compile features - done
+[0.233s] -- Detecting CXX compiler ABI info
+[0.322s] -- Detecting CXX compiler ABI info - done
+[0.330s] -- Check for working CXX compiler: /usr/bin/c++ - skipped
+[0.330s] -- Detecting CXX compile features
+[0.330s] -- Detecting CXX compile features - done
+[0.334s] -- Found ament_cmake: 1.3.14 (/opt/ros/humble/share/ament_cmake/cmake)
+[0.524s] -- Found Python3: /home/luca/venvs/mujoco_ros/bin/python3 (found version "3.10.12") found components: Interpreter 
+[0.618s] -- Found ament_cmake_pytest: 1.3.14 (/opt/ros/humble/share/ament_cmake_pytest/cmake)
+[1.030s] -- Configuring done
+[1.034s] -- Generating done
+[1.036s] -- Build files have been written to: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/build/ur_robot_description_cb2

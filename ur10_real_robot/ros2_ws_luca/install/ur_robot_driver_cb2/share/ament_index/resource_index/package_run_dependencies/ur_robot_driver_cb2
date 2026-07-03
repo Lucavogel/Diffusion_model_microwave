@@ -1,0 +1,1 @@
+controller_manager;controller_manager_msgs;geometry_msgs;hardware_interface;pluginlib;rclcpp;rclcpp_lifecycle;std_msgs;std_srvs;tf2_geometry_msgs;ur_controllers;ur_robot_description_cb2;ur_msgs;ros2_control;ros2_controllers;ament_lint_auto;ament_lint_common;ament_cmake_gmock;ros2_control_test_assets

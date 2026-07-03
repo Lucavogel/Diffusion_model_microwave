@@ -62,6 +62,7 @@ class FakeRobotBackend(RobotInterface):
         control_dt: float = 0.02,
         max_delta_deg: float = 2.0,
         kinematics=None,
+        verbose: bool = True,
     ) -> None:
         if initial_q is None:
             initial_q = np.array(
@@ -83,6 +84,7 @@ class FakeRobotBackend(RobotInterface):
 
         # Optionnel : si on donne servo.kin, on peut retourner eef_pos/eef_quat propres.
         self.kinematics = kinematics
+        self.verbose = bool(verbose)
 
     def connect(self) -> None:
         self.connected = True
@@ -162,14 +164,15 @@ class FakeRobotBackend(RobotInterface):
         if gripper_command is not None:
             self.gripper_state = float(gripper_command)
 
-        print("[FAKE ROBOT] command received")
-        print("  q_current deg :", np.round(np.degrees(q_before), 3))
-        print("  q_target  deg :", np.round(np.degrees(q_target), 3))
-        print("  q_safe    deg :", np.round(np.degrees(self.q), 3))
-        print("  delta deg     :", np.round(np.degrees(delta_safe), 3))
-        print("  qvel rad/s    :", np.round(self.qvel, 4))
-        print("  gripper       :", self.gripper_state)
-        print("-" * 60)
+        if self.verbose:
+            print("[FAKE ROBOT] command received")
+            print("  q_current deg :", np.round(np.degrees(q_before), 3))
+            print("  q_target  deg :", np.round(np.degrees(q_target), 3))
+            print("  q_safe    deg :", np.round(np.degrees(self.q), 3))
+            print("  delta deg     :", np.round(np.degrees(delta_safe), 3))
+            print("  qvel rad/s    :", np.round(self.qvel, 4))
+            print("  gripper       :", self.gripper_state)
+            print("-" * 60)
 
     def get_state(self) -> dict:
         return {

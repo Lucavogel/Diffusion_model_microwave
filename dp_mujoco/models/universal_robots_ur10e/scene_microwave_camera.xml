@@ -31,7 +31,7 @@
     <material name="cube_mat" rgba="0.85 0.2 0.2 1"/>
     <material name="leg_mat" rgba="0.2 0.2 0.2 1"/>
 
-    <mesh name="microwave" file="assets/microwave_narrow.obj" scale="0.01 0.01 0.01"/>
+    <mesh name="microwave" file="microwave_narrow.obj" scale="0.01 0.01 0.01"/>
   </asset>
 
   <worldbody>

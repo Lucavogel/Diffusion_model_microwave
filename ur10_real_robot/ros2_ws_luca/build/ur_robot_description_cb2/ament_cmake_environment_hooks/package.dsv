@@ -1,0 +1,4 @@
+source;share/ur_robot_description_cb2/local_setup.bash
+source;share/ur_robot_description_cb2/local_setup.dsv
+source;share/ur_robot_description_cb2/local_setup.sh
+source;share/ur_robot_description_cb2/local_setup.zsh

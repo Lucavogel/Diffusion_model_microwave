@@ -1,0 +1,91 @@
+<mujoco model="ur10_d455_support_rg2ft">
+  <compiler angle="radian"/>
+
+  <asset>
+    <mesh name="base" content_type="model/stl" file="base.stl"/>
+    <mesh name="shoulder" content_type="model/stl" file="shoulder.stl"/>
+    <mesh name="upperarm" content_type="model/stl" file="upperarm.stl"/>
+    <mesh name="forearm" content_type="model/stl" file="forearm.stl"/>
+    <mesh name="wrist1" content_type="model/stl" file="wrist1.stl"/>
+    <mesh name="wrist2" content_type="model/stl" file="wrist2.stl"/>
+    <mesh name="wrist3" content_type="model/stl" file="wrist3.stl"/>
+    <mesh name="quick_changer" content_type="model/stl" file="quick_changer.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="gripper_body" content_type="model/stl" file="gripper_body.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="angle_bracket" content_type="model/stl" file="angle_bracket.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="left_inner_knuckle" content_type="model/stl" file="left_inner_knuckle.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="right_outer_knuckle" content_type="model/stl" file="right_outer_knuckle.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="left_outer_knuckle" content_type="model/stl" file="left_outer_knuckle.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="left_inner_finger" content_type="model/stl" file="left_inner_finger.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="right_inner_finger" content_type="model/stl" file="right_inner_finger.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="right_inner_knuckle" content_type="model/stl" file="right_inner_knuckle.stl" scale="0.001 0.001 0.001"/>
+  </asset>
+
+  <worldbody>
+    <geom quat="-1 0 0 0" type="mesh" mesh="base"/>
+    <body name="shoulder_link" pos="0 0 0.1273" quat="0 0 0 1">
+      <inertial pos="0.021 -0.027 0" quat="0.988634 -0.000680926 0.148578 -0.0229591" mass="7.1" diaginertia="0.0353866 0.0352903 0.0202532"/>
+      <joint name="shoulder_pan_joint" pos="0 0 0" axis="0 0 1" range="-6.28319 6.28319" actuatorfrcrange="-330 330"/>
+      <geom quat="0 0 0 1" type="mesh" mesh="shoulder"/>
+      <body name="upper_arm_link" quat="0.707107 0.707107 0 0">
+        <inertial pos="-0.232 0 0.158" quat="0.500033 0.499784 0.489585 0.510381" mass="12.7" diaginertia="0.77068 0.769758 0.0278114"/>
+        <joint name="shoulder_lift_joint" pos="0 0 0" axis="0 0 1" range="-6.28319 6.28319" actuatorfrcrange="-330 330"/>
+        <geom pos="0 0 0.220941" quat="0.5 0.5 -0.5 -0.5" type="mesh" mesh="upperarm"/>
+        <body name="forearm_link" pos="-0.612 0 0">
+          <inertial pos="-0.3323 0 0.068" quat="0.492051 0.507971 0.507346 0.492394" mass="4.27" diaginertia="0.30928 0.306743 0.00985709"/>
+          <joint name="elbow_joint" pos="0 0 0" axis="0 0 1" range="-3.14159 3.14159" actuatorfrcrange="-150 150"/>
+          <geom pos="0 0 0.049042" quat="0.5 0.5 -0.5 -0.5" type="mesh" mesh="forearm"/>
+          <body name="wrist_1_link" pos="-0.5723 0 0.163941">
+            <inertial pos="0 -0.018 0.007" quat="0.525776 0.850564 -0.0100431 9.45801e-05" mass="2" diaginertia="0.00296017 0.00269992 0.00209991"/>
+            <joint name="wrist_1_joint" pos="0 0 0" axis="0 0 1" range="-6.28319 6.28319" actuatorfrcrange="-56 56"/>
+            <geom pos="0 0 -0.1149" quat="0.707107 0.707107 0 0" type="mesh" mesh="wrist1"/>
+            <body name="wrist_2_link" pos="0 -0.1157 -2.37305e-11" quat="0.707107 0.707107 0 0">
+              <inertial pos="0 0.018 -0.007" quat="0.525776 0.850564 -0.0100431 9.45801e-05" mass="2" diaginertia="0.00296017 0.00269992 0.00209991"/>
+              <joint name="wrist_2_joint" pos="0 0 0" axis="0 0 1" range="-6.28319 6.28319" actuatorfrcrange="-56 56"/>
+              <geom pos="0 0 -0.1158" quat="1 0 0 0" type="mesh" mesh="wrist2"/>
+              <body name="wrist_3_link" pos="0 0.0922 -1.89105e-11" quat="0.707107 -0.707107 0 0">
+                <inertial pos="0.00531738 -0.000730831 0.0349039" quat="0.895664 0.179163 0.0490845 0.404076" mass="1.68897" diaginertia="0.0122232 0.0107688 0.00442546"/>
+                <joint name="wrist_3_joint" pos="0 0 0" axis="0 0 1" range="-6.28319 6.28319" actuatorfrcrange="-56 56"/>
+                <geom pos="0 0 -0.0922" quat="0.707107 0.707107 0 0" type="mesh" mesh="wrist3"/>
+                <geom pos="0 0 0.013" quat="1 0 0 0" type="mesh" rgba="0.215686 0.592157 0.811765 1" mesh="quick_changer"/>
+                <geom pos="0 0 0.013" quat="1 0 0 0" type="mesh" rgba="0.7 0.7 0.7 1" mesh="angle_bracket"/>
+                <geom pos="0 0.000475769 0.0130024" quat="0.999987 0.00506143 0 0" type="mesh" rgba="0.7 0.7 0.7 1" mesh="gripper_body"/>
+                <geom size="0.085 0.0625888 0.01" pos="0.0449112 0.009 0.01" quat="4.89644e-12 2.44849e-12 -1 -2.44821e-12" type="box"/>
+                <geom size="0.013 0.062 0.0145" pos="0 0.0925 0.0227" quat="0.5 -0.5 -0.5 -0.5" type="box"/>
+                <body name="gripper_left_inner_knuckle" pos="0.0075 -0.0103018 0.152297" quat="0.978496 0.00495266 0.206202 0.00104369">
+                  <inertial pos="0.0176292 0.0104719 0.0170682" quat="0.92388 0 0.382683 0" mass="0.0243375" diaginertia="8e-06 7e-06 2e-06"/>
+                  <joint name="gripper_left_inner_knuckle_joint" pos="0 0 0" axis="0 0.999949 -0.010122" range="-1.19 0.01" actuatorfrcrange="-50 50"/>
+                  <geom pos="-0.0075 0.009367 -0.139397" quat="1 0 0 0" type="mesh" rgba="0.7 0.7 0.7 1" mesh="left_inner_knuckle"/>
+                </body>
+                <body name="gripper_right_outer_knuckle" pos="-0.017 -0.0103018 0.135798" quat="0.978496 0.00495266 -0.206202 -0.00104369">
+                  <inertial pos="-0.0123122 0.0103697 0.0102038" quat="0 0.92388 0 0.382683" mass="0.0415837" diaginertia="1.7e-05 1.6e-05 3e-06"/>
+                  <joint name="gripper_finger_joint" pos="0 0 0" axis="0 0.999949 -0.010122" range="0 1.18" actuatorfrcrange="-50 50"/>
+                  <geom pos="0.017 0.009534 -0.122898" type="mesh" rgba="0.7 0.7 0.7 1" mesh="right_outer_knuckle"/>
+                  <body name="gripper_right_inner_finger" pos="-0.039748 0.004784 0.037968" quat="0.978509 0 0.206204 0">
+                    <inertial pos="0.0093413 0.00610854 0.0313368" quat="0.99159 0 0.129422 0" mass="0.0320387" diaginertia="9.53113e-06 9e-06 1.46887e-06"/>
+                    <joint name="gripper_right_inner_finger_joint" pos="0 0 0" axis="0 0.999949 -0.010122" range="-1.19 0.01" actuatorfrcrange="-50 50"/>
+                    <geom pos="0.056748 0.00475 -0.160866" type="mesh" rgba="0.7 0.7 0.7 1" mesh="right_inner_finger"/>
+                  </body>
+                </body>
+                <body name="gripper_left_outer_knuckle" pos="0.017 -0.0103018 0.135798" quat="0.978496 0.00495266 0.206202 0.00104369">
+                  <inertial pos="0.012312 0.0103697 0.0102038" quat="0.92388 0 0.382683 0" mass="0.0415837" diaginertia="1.7e-05 1.6e-05 3e-06"/>
+                  <joint name="gripper_left_outer_knuckle_joint" pos="0 0 0" axis="0 0.999949 -0.010122" range="-1.19 0.01" actuatorfrcrange="-50 50"/>
+                  <geom pos="-0.017 0.009534 -0.122898" type="mesh" rgba="0.7 0.7 0.7 1" mesh="left_outer_knuckle"/>
+                  <body name="gripper_left_inner_finger" pos="0.039748 0.004784 0.037968" quat="0.978509 0 -0.206204 0">
+                    <inertial pos="-0.00934148 0.00610854 0.0313368" quat="0.99159 0 -0.129422 0" mass="0.0320387" diaginertia="9.53113e-06 9e-06 1.46887e-06"/>
+                    <joint name="gripper_left_inner_finger_joint" pos="0 0 0" axis="0 -0.999949 0.010122" range="-1.19 0.01" actuatorfrcrange="-50 50"/>
+                    <geom pos="-0.056748 0.00475 -0.160866" type="mesh" rgba="0.7 0.7 0.7 1" mesh="left_inner_finger"/>
+                  </body>
+                </body>
+                <body name="gripper_right_inner_knuckle" pos="-0.0075 -0.0103018 0.152297" quat="0.978496 0.00495266 -0.206202 -0.00104369">
+                  <inertial pos="-0.0176293 0.0104719 0.0170682" quat="0 0.92388 0 0.382683" mass="0.0243375" diaginertia="8e-06 7e-06 2e-06"/>
+                  <joint name="gripper_right_inner_knuckle_joint" pos="0 0 0" axis="0 0.999949 -0.010122" range="-0.01 1.19" actuatorfrcrange="-50 50"/>
+                  <geom pos="0.0075 0.009367 -0.139397" quat="1 0 0 0" type="mesh" rgba="0.7 0.7 0.7 1" mesh="right_inner_knuckle"/>
+                </body>
+              </body>
+            </body>
+          </body>
+        </body>
+      </body>
+    </body>
+  </worldbody>
+</mujoco>

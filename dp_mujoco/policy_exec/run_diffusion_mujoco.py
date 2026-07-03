@@ -137,7 +137,7 @@ def build_parser() -> argparse.ArgumentParser:
             / "dp_mujoco"
             / "models"
             / "universal_robots_ur10e"
-            / "scene_custom.xml"
+            / "scene_microwave_camera.xml"
         ),
         help="MuJoCo XML scene",
     )

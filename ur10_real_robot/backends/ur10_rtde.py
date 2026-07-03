@@ -7,10 +7,24 @@ from typing import Any
 import numpy as np
 from urx.urrtmon import URRTMonitor
 
-ROBOT_IP = "192.168.0.60"
+
+ROBOT_IP = "192.168.2.100"
 PORT = 30002
+
 ROBOT_FREQ = 125.0
 ROBOT_DT = 1.0 / ROBOT_FREQ
+
+
+def format_joint_list(q) -> str:
+    q_arr = np.asarray(q, dtype=float).reshape(-1)
+
+    if q_arr.shape[0] != 6:
+        raise ValueError(f"Expected 6 joints, got shape {q_arr.shape}")
+
+    if not np.all(np.isfinite(q_arr)):
+        raise ValueError(f"Invalid joint values: {q_arr}")
+
+    return "[" + ", ".join(f"{float(v):.9f}" for v in q_arr) + "]"
 
 
 @dataclass
@@ -24,49 +38,90 @@ class UR10RealtimeSession:
         self.sock: socket.socket | None = None
 
     def connect(self) -> "UR10RealtimeSession":
+        print(f"[INFO] Starting URRTMonitor on {self.robot_ip}...")
         self.rt = URRTMonitor(self.robot_ip)
         self.rt.start()
         self.rt.wait()
 
+        print(f"[INFO] Opening command socket {self.robot_ip}:{self.port}...")
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.settimeout(self.socket_timeout)
+
+        # Important pour éviter le buffering TCP.
+        self.sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+
         self.sock.connect((self.robot_ip, self.port))
+
+        print("[OK] UR10RealtimeSession connected.")
         return self
 
     def read(self, wait: bool = True) -> dict[str, Any]:
         if self.rt is None:
             raise RuntimeError("UR10 realtime session is not connected")
-        return self.rt.get_all_data(wait=wait)
+
+        data = self.rt.get_all_data(wait=wait)
+
+        if data is None:
+            raise RuntimeError("No realtime data received")
+
+        return data
 
     def current_q(self) -> np.ndarray:
         data = self.read(wait=True)
-        return np.asarray(data["qActual"], dtype=float)
+
+        if "qActual" not in data:
+            raise KeyError(f"'qActual' not found in realtime data. Keys: {list(data.keys())}")
+
+        q = np.asarray(data["qActual"], dtype=float).reshape(-1)
+
+        if q.shape[0] != 6:
+            raise ValueError(f"Expected 6 joints from qActual, got shape {q.shape}")
+
+        return q
 
     def send(self, command: str) -> None:
         if self.sock is None:
             raise RuntimeError("UR10 realtime session is not connected")
+
         self.sock.sendall(command.encode("utf-8"))
 
-    def send_servoj(self, q, t: float = 0.08) -> None:
-        q_list = list(np.asarray(q, dtype=float))
-        self.send(f"servoj({q_list}, 0, 0, {t})\n")
+    def send_servoj(self, q, t: float = 0.008, a: float = 0.0, v: float = 0.0) -> None:
+        q_str = format_joint_list(q)
 
-    def send_movej(self, q, a: float = 0.5, v: float = 0.5) -> None:
-        q_list = list(np.asarray(q, dtype=float))
-        self.send(f"movej({q_list}, {a}, {v})\n")
+        # Syntaxe simple compatible CB :
+        # servoj(q, a, v, t)
+        cmd = f"servoj({q_str}, {float(a):.6f}, {float(v):.6f}, {float(t):.6f})\n"
+        self.send(cmd)
 
-    def stopj(self, deceleration: float = 2.0) -> None:
-        self.send(f"stopj({deceleration})\n")
+    def send_movej(self, q, a: float = 0.2, v: float = 0.1) -> None:
+        q_str = format_joint_list(q)
+        cmd = f"movej({q_str}, {float(a):.6f}, {float(v):.6f})\n"
+        self.send(cmd)
+
+    def send_speedj(self, qd, a: float = 0.1, t: float = 0.02) -> None:
+        qd_str = format_joint_list(qd)
+        cmd = f"speedj({qd_str}, {float(a):.6f}, {float(t):.6f})\n"
+        self.send(cmd)
+
+    def stopj(self, deceleration: float = 1.0) -> None:
+        self.send(f"stopj({float(deceleration):.6f})\n")
 
     def close(self) -> None:
         if self.sock is not None:
-            self.sock.close()
+            try:
+                self.sock.close()
+            except Exception:
+                pass
             self.sock = None
+
         if self.rt is not None:
-            self.rt.stop()
+            try:
+                self.rt.stop()
+            except Exception:
+                pass
             self.rt = None
 
 
-def format_servoj(q, t: float = 0.08) -> str:
-    q_list = list(np.asarray(q, dtype=float))
-    return f"servoj({q_list}, 0, 0, {t})\n"
+def format_servoj(q, t: float = 0.008, a: float = 0.0, v: float = 0.0) -> str:
+    q_str = format_joint_list(q)
+    return f"servoj({q_str}, {float(a):.6f}, {float(v):.6f}, {float(t):.6f})\n"

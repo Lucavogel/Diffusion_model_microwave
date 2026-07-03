@@ -1,0 +1,6 @@
+[  7%] Built target onrobot_rg_msgs__rs
+[  7%] Built target onrobot_rg_msgs__cpp
+[ 15%] Built target onrobot_rg_msgs__rosidl_generator_c
+[35m[1mConsolidate compiler generated dependencies of target onrobot_rg_msgs__rosidl_typesupport_introspection_cpp[0m
+[ 25%] Built target onrobot_rg_msgs__rosidl_typesupport_cpp
+[ 35%] Built target onrobot_rg_msgs__rosidl_typesupport_introspection_cpp

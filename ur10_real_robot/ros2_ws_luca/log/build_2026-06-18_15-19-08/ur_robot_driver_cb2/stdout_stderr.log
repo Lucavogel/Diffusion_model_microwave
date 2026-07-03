@@ -1,0 +1,147 @@
+-- The C compiler identification is GNU 11.4.0
+-- The CXX compiler identification is GNU 11.4.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Found ament_cmake: 1.3.14 (/opt/ros/humble/share/ament_cmake/cmake)
+-- Found Python3: /usr/bin/python3 (found version "3.10.12") found components: Interpreter 
+-- Found hardware_interface: 2.53.1 (/opt/ros/humble/share/hardware_interface/cmake)
+-- Found rosidl_generator_c: 3.1.8 (/opt/ros/humble/share/rosidl_generator_c/cmake)
+-- Found rosidl_adapter: 3.1.8 (/opt/ros/humble/share/rosidl_adapter/cmake)
+-- Found rosidl_generator_cpp: 3.1.8 (/opt/ros/humble/share/rosidl_generator_cpp/cmake)
+-- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+-- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+-- Found rmw_implementation_cmake: 6.1.2 (/opt/ros/humble/share/rmw_implementation_cmake/cmake)
+-- Found rmw_fastrtps_cpp: 6.2.10 (/opt/ros/humble/share/rmw_fastrtps_cpp/cmake)
+-- Found TinyXML2 via Config file: TinyXML2_DIR-NOTFOUND
+-- Found OpenSSL: /usr/lib/x86_64-linux-gnu/libcrypto.so (found version "3.0.2")  
+-- Found TinyXML2 via Config file: TinyXML2_DIR-NOTFOUND
+-- Found FastRTPS: /opt/ros/humble/include  
+-- Found TinyXML2 via Config file: TinyXML2_DIR-NOTFOUND
+-- Found TinyXML2 via Config file: TinyXML2_DIR-NOTFOUND
+-- Using RMW implementation 'rmw_fastrtps_cpp' as default
+-- Looking for pthread.h
+-- Looking for pthread.h - found
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE  
+-- Found controller_manager: 2.53.1 (/opt/ros/humble/share/controller_manager/cmake)
+-- Found std_srvs: 4.9.1 (/opt/ros/humble/share/std_srvs/cmake)
+-- Found tf2_geometry_msgs: 0.25.20 (/opt/ros/humble/share/tf2_geometry_msgs/cmake)
+-- Found eigen3_cmake_module: 0.1.1 (/opt/ros/humble/share/eigen3_cmake_module/cmake)
+-- Found Eigen3: TRUE (found version "3.4.0") 
+-- Ensuring Eigen3 include directory is part of orocos-kdl CMake target
+-- Found ament_lint_auto: 0.12.15 (/opt/ros/humble/share/ament_lint_auto/cmake)
+-- Found gmock sources under '/opt/ros/humble/src/gmock_vendor': C++ tests using 'Google Mock' will be built
+-- Found ament_cmake_gtest: 1.3.14 (/opt/ros/humble/share/ament_cmake_gtest/cmake)
+-- Found gtest sources under '/opt/ros/humble/src/gtest_vendor': C++ tests using 'Google Test' will be built
+-- Added test 'cppcheck' to perform static code analysis on C / C++ code
+-- Configured cppcheck include dirs: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/src/ur_robot_driver_cb2/include
+-- Configured cppcheck exclude dirs and/or files: 
+-- Added test 'flake8' to check Python code syntax and style conventions
+-- Added test 'lint_cmake' to check CMake code style
+-- Added test 'pep257' to check Python code against some of the docstring style conventions in PEP 257
+-- Added test 'uncrustify' to check C / C++ code style
+-- Configured uncrustify additional arguments: 
+-- Added test 'xmllint' to check XML markup files
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/build/ur_robot_driver_cb2
+[ 35%] [32mBuilding CXX object CMakeFiles/ur_robot_driver_cb2_plugin.dir/src/robot_state_RT.cpp.o[0m
+[ 35%] [32mBuilding CXX object gmock/CMakeFiles/gmock.dir/opt/ros/humble/src/gtest_vendor/src/gtest-all.cc.o[0m
+[ 35%] [32mBuilding CXX object gmock/CMakeFiles/gmock.dir/src/gmock-all.cc.o[0m
+[ 35%] [32mBuilding CXX object CMakeFiles/ur_robot_driver_cb2_plugin.dir/src/ur_driver.cpp.o[0m
+[ 35%] [32mBuilding CXX object CMakeFiles/ur_robot_driver_cb2_plugin.dir/src/ur_hardware_interface.cpp.o[0m
+[ 42%] [32mBuilding CXX object CMakeFiles/ur_robot_driver_cb2_plugin.dir/src/ur_realtime_communication.cpp.o[0m
+[ 50%] [32mBuilding CXX object CMakeFiles/ur_robot_driver_cb2_plugin.dir/src/robot_state.cpp.o[0m
+[ 57%] [32mBuilding CXX object CMakeFiles/ur_robot_driver_cb2_plugin.dir/src/ur_communication.cpp.o[0m
+[ 64%] [32mBuilding CXX object gmock/CMakeFiles/gmock_main.dir/src/gmock_main.cc.o[0m
+[ 71%] [32m[1mLinking CXX static library libgmock_main.a[0m
+[ 71%] Built target gmock_main
+[01m[K/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/src/ur_robot_driver_cb2/src/ur_realtime_communication.cpp:[m[K In member function ‘[01m[Kvoid UrRealtimeCommunication::setSpeed(double, double, double, double, double, double, double)[m[K’:
+[01m[K/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/src/ur_robot_driver_cb2/src/ur_realtime_communication.cpp:111:113:[m[K [01;35m[Kwarning: [m[Kunused parameter ‘[01m[Kacc[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-parameter-Wunused-parameter]8;;[m[K]
+  111 | void UrRealtimeCommunication::setSpeed(double q0, double q1, double q2, double q3, double q4, double q5, [01;35m[Kdouble acc[m[K) {
+      |                                                                                                          [01;35m[K~~~~~~~^~~[m[K
+In file included from [01m[K/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/src/ur_robot_driver_cb2/src/ur_hardware_interface.cpp:5[m[K:
+[01m[K/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/src/ur_robot_driver_cb2/include/ur_robot_driver_cb2/ur_hardware_interface.h:49:63:[m[K [01;35m[Kwarning: [m[Kextra ‘[01m[K;[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wpedantic-Wpedantic]8;;[m[K]
+   49 |     RCLCPP_SHARED_PTR_DEFINITIONS(URPositionHardwareInterface)[01;35m[K;[m[K
+      |                                                               [01;35m[K^[m[K
+      |                                                               [31m[K-[m[K
+[01m[K/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/src/ur_robot_driver_cb2/src/ur_hardware_interface.cpp:[m[K In member function ‘[01m[Kvirtual hardware_interface::CallbackReturn ur_robot_driver_cb2::URPositionHardwareInterface::on_configure(const rclcpp_lifecycle::State&)[m[K’:
+[01m[K/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/src/ur_robot_driver_cb2/src/ur_hardware_interface.cpp:304:109:[m[K [01;35m[Kwarning: [m[Kunused parameter ‘[01m[Kprevious_state[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-parameter-Wunused-parameter]8;;[m[K]
+  304 | dwareInterface::on_configure([01;35m[Kconst rclcpp_lifecycle::State& previous_state[m[K)
+      |                              [01;35m[K~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~[m[K
+
+[01m[K/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/src/ur_robot_driver_cb2/src/ur_hardware_interface.cpp:[m[K In member function ‘[01m[Kvirtual hardware_interface::CallbackReturn ur_robot_driver_cb2::URPositionHardwareInterface::on_activate(const rclcpp_lifecycle::State&)[m[K’:
+[01m[K/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/src/ur_robot_driver_cb2/src/ur_hardware_interface.cpp:317:108:[m[K [01;35m[Kwarning: [m[Kunused parameter ‘[01m[Kprevious_state[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-parameter-Wunused-parameter]8;;[m[K]
+  317 | rdwareInterface::on_activate([01;35m[Kconst rclcpp_lifecycle::State& previous_state[m[K)
+      |                              [01;35m[K~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~[m[K
+
+[01m[K/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/src/ur_robot_driver_cb2/src/ur_hardware_interface.cpp:[m[K In member function ‘[01m[Kvirtual hardware_interface::CallbackReturn ur_robot_driver_cb2::URPositionHardwareInterface::on_deactivate(const rclcpp_lifecycle::State&)[m[K’:
+[01m[K/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/src/ur_robot_driver_cb2/src/ur_hardware_interface.cpp:363:110:[m[K [01;35m[Kwarning: [m[Kunused parameter ‘[01m[Kprevious_state[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-parameter-Wunused-parameter]8;;[m[K]
+  363 | wareInterface::on_deactivate([01;35m[Kconst rclcpp_lifecycle::State& previous_state[m[K)
+      |                              [01;35m[K~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~[m[K
+
+[01m[K/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/src/ur_robot_driver_cb2/src/ur_hardware_interface.cpp:[m[K In member function ‘[01m[Kvirtual hardware_interface::return_type ur_robot_driver_cb2::URPositionHardwareInterface::read(const rclcpp::Time&, const rclcpp::Duration&)[m[K’:
+[01m[K/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/src/ur_robot_driver_cb2/src/ur_hardware_interface.cpp:379:87:[m[K [01;35m[Kwarning: [m[Kunused parameter ‘[01m[Ktime[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-parameter-Wunused-parameter]8;;[m[K]
+  379 | _type URPositionHardwareInterface::read([01;35m[Kconst rclcpp::Time& time[m[K,const rclcpp::Duration& period)
+      |                                         [01;35m[K~~~~~~~~~~~~~~~~~~~~^~~~[m[K
+
+[01m[K/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/src/ur_robot_driver_cb2/src/ur_hardware_interface.cpp:379:116:[m[K [01;35m[Kwarning: [m[Kunused parameter ‘[01m[Kperiod[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-parameter-Wunused-parameter]8;;[m[K]
+  379 | nterface::read(const rclcpp::Time& time,[01;35m[Kconst rclcpp::Duration& period[m[K)
+      |                                         [01;35m[K~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~[m[K
+
+[01m[K/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/src/ur_robot_driver_cb2/src/ur_hardware_interface.cpp:[m[K In member function ‘[01m[Kvirtual hardware_interface::return_type ur_robot_driver_cb2::URPositionHardwareInterface::write(const rclcpp::Time&, const rclcpp::Duration&)[m[K’:
+[01m[K/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/src/ur_robot_driver_cb2/src/ur_hardware_interface.cpp:405:88:[m[K [01;35m[Kwarning: [m[Kunused parameter ‘[01m[Ktime[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-parameter-Wunused-parameter]8;;[m[K]
+  405 | type URPositionHardwareInterface::write([01;35m[Kconst rclcpp::Time& time[m[K,const rclcpp::Duration& period)
+      |                                         [01;35m[K~~~~~~~~~~~~~~~~~~~~^~~~[m[K
+
+[01m[K/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/src/ur_robot_driver_cb2/src/ur_hardware_interface.cpp:405:117:[m[K [01;35m[Kwarning: [m[Kunused parameter ‘[01m[Kperiod[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-parameter-Wunused-parameter]8;;[m[K]
+  405 | terface::write(const rclcpp::Time& time,[01;35m[Kconst rclcpp::Duration& period[m[K)
+      |                                         [01;35m[K~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~[m[K
+
+[01m[K/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/src/ur_robot_driver_cb2/src/ur_hardware_interface.cpp:[m[K In member function ‘[01m[Kvirtual hardware_interface::return_type ur_robot_driver_cb2::URPositionHardwareInterface::perform_command_mode_switch(const std::vector<std::__cxx11::basic_string<char> >&, const std::vector<std::__cxx11::basic_string<char> >&)[m[K’:
+[01m[K/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/src/ur_robot_driver_cb2/src/ur_hardware_interface.cpp:488:122:[m[K [01;35m[Kwarning: [m[Kunused parameter ‘[01m[Kstart_interfaces[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-parameter-Wunused-parameter]8;;[m[K]
+  488 | perform_command_mode_switch([01;35m[Kconst std::vector<std::string>& start_interfaces[m[K, const std::vector<std::string>& stop_interfaces)
+      |                             [01;35m[K~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~[m[K
+
+[01m[K/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/src/ur_robot_driver_cb2/src/ur_hardware_interface.cpp:488:172:[m[K [01;35m[Kwarning: [m[Kunused parameter ‘[01m[Kstop_interfaces[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-parameter-Wunused-parameter]8;;[m[K]
+  488 | :string>& start_interfaces, [01;35m[Kconst std::vector<std::string>& stop_interfaces[m[K)
+      |                             [01;35m[K~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~[m[K
+
+[ 78%] [32m[1mLinking CXX shared library libur_robot_driver_cb2_plugin.so[0m
+[ 78%] Built target ur_robot_driver_cb2_plugin
+[ 85%] [32m[1mLinking CXX static library libgmock.a[0m
+[ 85%] Built target gmock
+[ 92%] [32mBuilding CXX object CMakeFiles/test_ur_robot_driver_cb2.dir/test/test_ur_robot_driver_cb2.cpp.o[0m
+In file included from [01m[K/opt/ros/humble/src/gtest_vendor/include/gtest/gtest.h:62[m[K,
+                 from [01m[K/opt/ros/humble/src/gmock_vendor/include/gmock/internal/gmock-internal-utils.h:47[m[K,
+                 from [01m[K/opt/ros/humble/src/gmock_vendor/include/gmock/gmock-actions.h:51[m[K,
+                 from [01m[K/opt/ros/humble/src/gmock_vendor/include/gmock/gmock.h:59[m[K,
+                 from [01m[K/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/src/ur_robot_driver_cb2/test/test_ur_robot_driver_cb2.cpp:15[m[K:
+[01m[K/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/src/ur_robot_driver_cb2/test/test_ur_robot_driver_cb2.cpp:[m[K In member function ‘[01m[Kvirtual void TestURPositionHardwareInterface_load_ur_robot_driver_cb2_2dof_Test::TestBody()[m[K’:
+[01m[K/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/src/ur_robot_driver_cb2/test/test_ur_robot_driver_cb2.cpp:59:92:[m[K [01;31m[Kerror: [m[Kno matching function for call to ‘[01m[Khardware_interface::ResourceManager::ResourceManager(std::__cxx11::basic_string<char>&, rclcpp::node_interfaces::NodeClockInterface::SharedPtr, rclcpp::node_interfaces::NodeLoggingInterface::SharedPtr)[m[K’
+   59 |                                   node->get_node_logging_interface()[01;31m[K)[m[K);
+      |                                                                     [01;31m[K^[m[K
+
+In file included from [01m[K/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/src/ur_robot_driver_cb2/test/test_ur_robot_driver_cb2.cpp:20[m[K:
+[01m[K/opt/ros/humble/include/hardware_interface/hardware_interface/resource_manager.hpp:66:12:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Khardware_interface::ResourceManager::ResourceManager(const string&, bool, bool)[m[K’
+   66 |   explicit [01;36m[KResourceManager[m[K(
+      |            [01;36m[K^~~~~~~~~~~~~~~[m[K
+[01m[K/opt/ros/humble/include/hardware_interface/hardware_interface/resource_manager.hpp:67:36:[m[K [01;36m[Knote: [m[K  no known conversion for argument 2 from ‘[01m[Krclcpp::node_interfaces::NodeClockInterface::SharedPtr[m[K’ {aka ‘[01m[Kstd::shared_ptr<rclcpp::node_interfaces::NodeClockInterface>[m[K’} to ‘[01m[Kbool[m[K’
+   67 |     const std::string & urdf, [01;36m[Kbool validate_interfaces = true[m[K, bool activate_all = false);
+      |                               [01;36m[K~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~[m[K
+[01m[K/opt/ros/humble/include/hardware_interface/hardware_interface/resource_manager.hpp:49:3:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Khardware_interface::ResourceManager::ResourceManager()[m[K’
+   49 |   [01;36m[KResourceManager[m[K();
+      |   [01;36m[K^~~~~~~~~~~~~~~[m[K
+[01m[K/opt/ros/humble/include/hardware_interface/hardware_interface/resource_manager.hpp:49:3:[m[K [01;36m[Knote: [m[K  candidate expects 0 arguments, 3 provided
+gmake[2]: *** [CMakeFiles/test_ur_robot_driver_cb2.dir/build.make:76: CMakeFiles/test_ur_robot_driver_cb2.dir/test/test_ur_robot_driver_cb2.cpp.o] Error 1
+gmake[1]: *** [CMakeFiles/Makefile2:203: CMakeFiles/test_ur_robot_driver_cb2.dir/all] Error 2
+gmake: *** [Makefile:146: all] Error 2

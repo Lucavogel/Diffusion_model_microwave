@@ -31,6 +31,52 @@ def project_to_so3(R: np.ndarray) -> np.ndarray:
     return R_proj
 
 
+def rot_to_rotvec(R: np.ndarray) -> np.ndarray:
+    R = project_to_so3(R)
+    cos_angle = (float(np.trace(R)) - 1.0) * 0.5
+    cos_angle = float(np.clip(cos_angle, -1.0, 1.0))
+    angle = float(np.arccos(cos_angle))
+
+    if angle < 1e-9:
+        return np.zeros(3, dtype=np.float64)
+
+    axis = np.array(
+        [
+            R[2, 1] - R[1, 2],
+            R[0, 2] - R[2, 0],
+            R[1, 0] - R[0, 1],
+        ],
+        dtype=np.float64,
+    )
+    axis = axis / (2.0 * np.sin(angle))
+    return axis * angle
+
+
+def rotvec_to_rot(v: np.ndarray) -> np.ndarray:
+    v = np.asarray(v, dtype=np.float64).reshape(3)
+    angle = float(np.linalg.norm(v))
+
+    if angle < 1e-9:
+        return np.eye(3, dtype=np.float64)
+
+    axis = v / angle
+    x, y, z = axis
+    K = np.array(
+        [
+            [0.0, -z, y],
+            [z, 0.0, -x],
+            [-y, x, 0.0],
+        ],
+        dtype=np.float64,
+    )
+    R = (
+        np.eye(3, dtype=np.float64)
+        + np.sin(angle) * K
+        + (1.0 - np.cos(angle)) * (K @ K)
+    )
+    return project_to_so3(R)
+
+
 class RealTeleopTargetListener(Node):
     """
     Version robot réel basée sur la version simulation validée.
@@ -58,6 +104,10 @@ class RealTeleopTargetListener(Node):
         gripper_min: float = -0.2,
         gripper_max: float = 1.2,
         gripper_speed: float = 0.5,
+        touch_axis_map: str = "identity",
+        touch_rot_map: str = "same_as_position",
+        touch_rot_apply: str = "world",
+        touch_rot_method: str = "matrix",
     ) -> None:
         super().__init__("real_teleop_target_listener")
 
@@ -81,6 +131,19 @@ class RealTeleopTargetListener(Node):
         # Mapping Touch -> robot
         # --------------------------------------------------
         self.position_scale = float(position_scale)
+        self.touch_axis_map = str(touch_axis_map)
+        self.touch_pos_map = self._build_touch_pos_map(self.touch_axis_map)
+        self.touch_rot_map_name = str(touch_rot_map)
+        if self.touch_rot_map_name == "same_as_position":
+            self.touch_rot_map = self.touch_pos_map.copy()
+        else:
+            self.touch_rot_map = self._build_touch_pos_map(self.touch_rot_map_name)
+        if touch_rot_apply not in {"world", "local"}:
+            raise ValueError(f"Unknown touch_rot_apply: {touch_rot_apply}")
+        self.touch_rot_apply = str(touch_rot_apply)
+        if touch_rot_method not in {"matrix", "rotvec", "rotvec_inv"}:
+            raise ValueError(f"Unknown touch_rot_method: {touch_rot_method}")
+        self.touch_rot_method = str(touch_rot_method)
 
         self.initial_robot_pos = (
             np.asarray(initial_robot_pos, dtype=np.float64).reshape(3).copy()
@@ -161,6 +224,63 @@ class RealTeleopTargetListener(Node):
             0.005,
             self.update_gripper,
         )
+
+    @staticmethod
+    def _build_touch_pos_map(name: str) -> np.ndarray:
+        if name == "identity":
+            return np.eye(3, dtype=np.float64)
+
+        if name == "swap_xy":
+            return np.array(
+                [
+                    [0.0, 1.0, 0.0],
+                    [1.0, 0.0, 0.0],
+                    [0.0, 0.0, 1.0],
+                ],
+                dtype=np.float64,
+            )
+
+        if name == "swap_xy_neg":
+            return np.array(
+                [
+                    [0.0, -1.0, 0.0],
+                    [-1.0, 0.0, 0.0],
+                    [0.0, 0.0, 1.0],
+                ],
+                dtype=np.float64,
+            )
+
+        if name == "swap_xy_neg_y":
+            return np.array(
+                [
+                    [0.0, 1.0, 0.0],
+                    [-1.0, 0.0, 0.0],
+                    [0.0, 0.0, 1.0],
+                ],
+                dtype=np.float64,
+            )
+
+        if name == "swap_xy_neg_x":
+            return np.array(
+                [
+                    [0.0, -1.0, 0.0],
+                    [1.0, 0.0, 0.0],
+                    [0.0, 0.0, 1.0],
+                ],
+                dtype=np.float64,
+            )
+
+        if name == "neg_xy":
+            return np.array(
+                [
+                    [-1.0, 0.0, 0.0],
+                    [0.0, -1.0, 0.0],
+                    [0.0, 0.0, 1.0],
+                ],
+                dtype=np.float64,
+            )
+
+        raise ValueError(f"Unknown touch_axis_map: {name}")
 
     def set_robot_reference(self, pos: np.ndarray, rot: np.ndarray) -> None:
         """
@@ -277,7 +397,7 @@ class RealTeleopTargetListener(Node):
             # 1. Différentiel position Touch -> robot
             # --------------------------------------------------
             dpos_touch = touch_pos - self.prev_touch_pos
-            dpos_robot = self.position_scale * dpos_touch
+            dpos_robot = self.position_scale * (self.touch_pos_map @ dpos_touch)
 
             # --------------------------------------------------
             # 2. Max speed cartésien de la target
@@ -294,7 +414,20 @@ class RealTeleopTargetListener(Node):
             # 3. Différentiel orientation
             # --------------------------------------------------
             delta_rot = touch_rot @ self.prev_touch_rot.T
-            self.target_raw_rot = delta_rot @ self.target_raw_rot
+
+            if self.touch_rot_method == "matrix":
+                delta_rot_robot = self.touch_rot_map @ delta_rot @ self.touch_rot_map.T
+            else:
+                delta_rotvec = rot_to_rotvec(delta_rot)
+                if self.touch_rot_method == "rotvec_inv":
+                    delta_rotvec = -delta_rotvec
+                delta_rotvec_robot = self.touch_rot_map @ delta_rotvec
+                delta_rot_robot = rotvec_to_rot(delta_rotvec_robot)
+
+            if self.touch_rot_apply == "world":
+                self.target_raw_rot = delta_rot_robot @ self.target_raw_rot
+            else:
+                self.target_raw_rot = self.target_raw_rot @ delta_rot_robot
             self.target_raw_rot = project_to_so3(self.target_raw_rot)
 
             # --------------------------------------------------
@@ -365,6 +498,18 @@ class RealTeleopTargetListener(Node):
                 self.target_rot.copy(),
                 float(self.gripper_cmd),
             )
+
+    def get_target_age_seconds(self) -> Optional[float]:
+        with self.lock:
+            if not self.touch_initialized:
+                return None
+
+            now = self.get_clock().now()
+            return float((now - self.last_pose_time).nanoseconds * 1e-9)
+
+    def get_gripper_buttons(self) -> int:
+        with self.lock:
+            return int(self.current_buttons)
 
     def sync_to_pose(self, pos: np.ndarray, rot: np.ndarray) -> None:
         """

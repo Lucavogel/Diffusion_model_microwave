@@ -1,0 +1,7 @@
+{
+  "package_name": "onrobot_rg_msgs",
+  "non_idl_tuples": [
+    "/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/src/onrobot_rg_msgs:msg/OnRobotRGInput.msg",
+    "/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/src/onrobot_rg_msgs:msg/OnRobotRGOutput.msg"
+  ]
+}

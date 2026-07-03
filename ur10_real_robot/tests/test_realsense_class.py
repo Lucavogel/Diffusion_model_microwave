@@ -5,6 +5,7 @@ import cv2
 
 CONFIG_PATH = "/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/camera/config/d435i_config.json"
 SERIAL_NUMBER_TOP_DOWN = "332322072359"
+SERIAL_NUMBER_FRONT = "043422251624"
 
 
 def main() -> None:
@@ -16,7 +17,7 @@ def main() -> None:
         fps=30,
         output_size=(320, 240),
         display_size=(640, 480),
-        serial_number=SERIAL_NUMBER_TOP_DOWN,
+        serial_number=SERIAL_NUMBER_FRONT,
         apply_advanced_config=True,
     )
 
@@ -38,8 +39,9 @@ def main() -> None:
                 (640, 640),
                 interpolation=cv2.INTER_NEAREST,
             )
+            
 
-            cv2.imshow("Normal top-down camera", display_bgr)
+            cv2.imshow("Normal Eye-in-Hand camera", display_bgr)
             cv2.imshow("Pixelized dataset view 360 x 240", pixelized_preview)
 
             if cv2.waitKey(1) & 0xFF == ord("q"):

@@ -1,0 +1,25 @@
+moveit_setup_assistant_config:
+  urdf:
+    package: realsense2_description
+    relative_path: urdf/ur10_d455_support_rg2ft_driver.urdf
+  srdf:
+    relative_path: config/ur10_d455_support_rg2ft.srdf
+  package_settings:
+    author_name: baptiste
+    author_email: baptiste.mereaux@eurodao.com
+    generated_timestamp: 1774975753
+  control_xacro:
+    command:
+      - position
+    state:
+      - position
+      - velocity
+  modified_urdf:
+    xacros:
+      - control_xacro
+  control_xacro:
+    command:
+      - position
+    state:
+      - position
+      - velocity

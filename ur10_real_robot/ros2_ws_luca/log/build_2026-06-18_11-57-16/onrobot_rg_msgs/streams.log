@@ -1,0 +1,32 @@
+[0.021s] Invoking command in '/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/build/onrobot_rg_msgs': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/bringup_gripper:/opt/ros/humble VIRTUAL_ENV_PROMPT=(mujoco_ros) /usr/bin/cmake /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/src/onrobot_rg_msgs -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs
+[0.037s] -- Found ament_cmake: 1.3.14 (/opt/ros/humble/share/ament_cmake/cmake)
+[0.187s] -- Override CMake install command with custom implementation using symlinks instead of copying resources
+[0.194s] -- Found builtin_interfaces: 1.2.2 (/opt/ros/humble/share/builtin_interfaces/cmake)
+[0.242s] -- Found rosidl_generator_c: 3.1.8 (/opt/ros/humble/share/rosidl_generator_c/cmake)
+[0.246s] -- Found rosidl_adapter: 3.1.8 (/opt/ros/humble/share/rosidl_adapter/cmake)
+[0.258s] -- Found rosidl_generator_cpp: 3.1.8 (/opt/ros/humble/share/rosidl_generator_cpp/cmake)
+[0.277s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[0.300s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[0.321s] -- Found rosidl_default_generators: 1.2.1 (/opt/ros/humble/share/rosidl_default_generators/cmake)
+[0.684s] -- Found ament_cmake_ros: 0.10.0 (/opt/ros/humble/share/ament_cmake_ros/cmake)
+[1.053s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[1.182s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[1.211s] -- Found python_cmake_module: 0.10.0 (/opt/ros/humble/share/python_cmake_module/cmake)
+[1.243s] -- Using PYTHON_EXECUTABLE: /home/luca/venvs/mujoco_ros/bin/python3
+[1.244s] -- Using PYTHON_INCLUDE_DIRS: /usr/include/python3.10
+[1.244s] -- Using PYTHON_LIBRARIES: /usr/lib/x86_64-linux-gnu/libpython3.10.so
+[1.343s] -- Configuring done
+[1.390s] -- Generating done
+[1.403s] -- Build files have been written to: /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/build/onrobot_rg_msgs
+[1.413s] Invoked command in '/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/build/onrobot_rg_msgs' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/bringup_gripper:/opt/ros/humble VIRTUAL_ENV_PROMPT=(mujoco_ros) /usr/bin/cmake /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/src/onrobot_rg_msgs -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/onrobot_rg_msgs
+[1.416s] Invoking command in '/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/build/onrobot_rg_msgs': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/bringup_gripper:/opt/ros/humble VIRTUAL_ENV_PROMPT=(mujoco_ros) /usr/bin/cmake --build /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/build/onrobot_rg_msgs -- -j16 -l16
+[1.462s] [35m[1mConsolidate compiler generated dependencies of target onrobot_rg_msgs__rosidl_generator_c[0m
+[1.474s] failed to create symbolic link '/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/build/onrobot_rg_msgs/ament_cmake_python/onrobot_rg_msgs/onrobot_rg_msgs' because existing path cannot be removed: Is a directory
+[1.474s] [  5%] Built target onrobot_rg_msgs__cpp
+[1.474s] [  5%] Built target onrobot_rg_msgs__rs
+[1.475s] gmake[2]: *** [CMakeFiles/ament_cmake_python_symlink_onrobot_rg_msgs.dir/build.make:70: CMakeFiles/ament_cmake_python_symlink_onrobot_rg_msgs] Error 1
+[1.475s] gmake[1]: *** [CMakeFiles/Makefile2:440: CMakeFiles/ament_cmake_python_symlink_onrobot_rg_msgs.dir/all] Error 2
+[1.476s] gmake[1]: *** Waiting for unfinished jobs....
+[1.477s] [ 15%] Built target onrobot_rg_msgs__rosidl_generator_c
+[1.479s] gmake: *** [Makefile:146: all] Error 2
+[1.482s] Invoked command in '/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/build/onrobot_rg_msgs' returned '2': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/install/bringup_gripper:/opt/ros/humble VIRTUAL_ENV_PROMPT=(mujoco_ros) /usr/bin/cmake --build /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/build/onrobot_rg_msgs -- -j16 -l16

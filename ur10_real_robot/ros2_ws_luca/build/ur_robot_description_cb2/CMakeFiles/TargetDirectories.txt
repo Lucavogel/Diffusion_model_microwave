@@ -1,0 +1,9 @@
+/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/build/ur_robot_description_cb2/CMakeFiles/uninstall.dir
+/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/build/ur_robot_description_cb2/CMakeFiles/ur_robot_description_cb2_uninstall.dir
+/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/build/ur_robot_description_cb2/CMakeFiles/test.dir
+/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/build/ur_robot_description_cb2/CMakeFiles/edit_cache.dir
+/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/build/ur_robot_description_cb2/CMakeFiles/rebuild_cache.dir
+/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/build/ur_robot_description_cb2/CMakeFiles/list_install_components.dir
+/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/build/ur_robot_description_cb2/CMakeFiles/install.dir
+/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/build/ur_robot_description_cb2/CMakeFiles/install/local.dir
+/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/build/ur_robot_description_cb2/CMakeFiles/install/strip.dir
