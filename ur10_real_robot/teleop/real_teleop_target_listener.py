@@ -104,6 +104,8 @@ class RealTeleopTargetListener(Node):
         gripper_min: float = -0.2,
         gripper_max: float = 1.2,
         gripper_speed: float = 0.5,
+        gripper_command_mode: str = "continuous",
+        gripper_step_values: tuple[float, float, float] = (-0.2, 0.30, 0.70),
         touch_axis_map: str = "identity",
         touch_rot_map: str = "same_as_position",
         touch_rot_apply: str = "world",
@@ -188,6 +190,17 @@ class RealTeleopTargetListener(Node):
         self.gripper_min = float(gripper_min)
         self.gripper_max = float(gripper_max)
         self.gripper_speed = float(gripper_speed)
+        if gripper_command_mode not in {"continuous", "three_state"}:
+            raise ValueError(f"Unknown gripper_command_mode: {gripper_command_mode}")
+        self.gripper_command_mode = str(gripper_command_mode)
+        self.gripper_step_values = tuple(
+            max(self.gripper_min, min(self.gripper_max, float(v)))
+            for v in gripper_step_values
+        )
+        if len(self.gripper_step_values) != 3:
+            raise ValueError("gripper_step_values must contain exactly three values.")
+        self.gripper_step_index = 0
+        self.prev_buttons_for_gripper = 0
 
         self.gripper_value = float(gripper_min)
         self.last_gripper_time = self.get_clock().now()
@@ -326,6 +339,8 @@ class RealTeleopTargetListener(Node):
             self.current_buttons = 0
             self.gripper_value = self.gripper_min
             self.gripper_cmd = self.gripper_min
+            self.gripper_step_index = 0
+            self.prev_buttons_for_gripper = 0
             self.last_gripper_time = self.get_clock().now()
 
             self.target_pos = None
@@ -457,6 +472,9 @@ class RealTeleopTargetListener(Node):
 
     def gripper_cb(self, msg: Float32) -> None:
         with self.lock:
+            if self.gripper_command_mode == "three_state":
+                return
+
             value = float(msg.data)
             value = max(self.gripper_min, min(self.gripper_max, value))
 
@@ -475,6 +493,20 @@ class RealTeleopTargetListener(Node):
 
             if dt <= 1e-6 or dt > 0.5:
                 dt = 0.005
+
+            if self.gripper_command_mode == "three_state":
+                # Edge-triggered gripper: one close-button click moves
+                # open -> narrow -> grasp, while the open button returns to open.
+                if self.current_buttons != 0 and self.prev_buttons_for_gripper == 0:
+                    if self.current_buttons == -1:
+                        self.gripper_step_index = min(2, self.gripper_step_index + 1)
+                    elif self.current_buttons == 1:
+                        self.gripper_step_index = 0
+
+                self.prev_buttons_for_gripper = int(self.current_buttons)
+                self.gripper_value = float(self.gripper_step_values[self.gripper_step_index])
+                self.gripper_cmd = float(self.gripper_value)
+                return
 
             if self.current_buttons == 1:
                 self.gripper_value -= self.gripper_speed * dt

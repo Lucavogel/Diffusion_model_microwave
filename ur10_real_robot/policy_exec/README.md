@@ -59,6 +59,7 @@ The safe test order is:
   --gripper-enable \
   --gripper-motion-enable \
   --gripper-force-n 8 \
+  --action-quat-format wxyz \
   --max-run-time 20
 ```
 

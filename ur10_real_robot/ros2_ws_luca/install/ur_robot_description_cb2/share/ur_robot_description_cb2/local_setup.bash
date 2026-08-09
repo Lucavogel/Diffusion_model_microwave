@@ -1,1 +1,0 @@
-/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/build/ur_robot_description_cb2/ament_cmake_environment_hooks/local_setup.bash

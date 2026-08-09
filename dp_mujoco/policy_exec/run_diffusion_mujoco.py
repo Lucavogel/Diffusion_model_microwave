@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import time
 from pathlib import Path
 
@@ -22,6 +23,81 @@ from dp_mujoco.policy_exec.trajectory_executor import TrajectoryExecutor
 
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
+
+
+class TimingStats:
+    def __init__(self) -> None:
+        self.values: dict[str, list[float]] = {}
+
+    def add(self, name: str, dt_s: float) -> None:
+        self.values.setdefault(name, []).append(float(dt_s))
+
+    def summary_rows(self) -> list[dict[str, float | int | str]]:
+        rows = []
+        for name, values in sorted(self.values.items()):
+            if not values:
+                continue
+            arr = np.asarray(values, dtype=np.float64) * 1000.0
+            rows.append(
+                {
+                    "name": name,
+                    "count": int(arr.size),
+                    "mean_ms": float(np.mean(arr)),
+                    "std_ms": float(np.std(arr)),
+                    "p50_ms": float(np.percentile(arr, 50)),
+                    "p95_ms": float(np.percentile(arr, 95)),
+                    "p99_ms": float(np.percentile(arr, 99)),
+                    "min_ms": float(np.min(arr)),
+                    "max_ms": float(np.max(arr)),
+                }
+            )
+        return rows
+
+    def print_summary(self) -> None:
+        rows = self.summary_rows()
+        if not rows:
+            return
+        print()
+        print("==================================================")
+        print("MUJOCO EXECUTION TIMING SUMMARY")
+        print("==================================================")
+        print(
+            f"{'name':<18} {'count':>8} {'mean':>9} {'std':>9} "
+            f"{'p95':>9} {'p99':>9} {'min':>9} {'max':>9}"
+        )
+        print("-" * 90)
+        for row in rows:
+            print(
+                f"{row['name']:<18} {row['count']:>8} "
+                f"{row['mean_ms']:>9.3f} {row['std_ms']:>9.3f} "
+                f"{row['p95_ms']:>9.3f} {row['p99_ms']:>9.3f} "
+                f"{row['min_ms']:>9.3f} {row['max_ms']:>9.3f}"
+            )
+        print("==================================================")
+
+    def save_csv(self, path: str | Path, metadata: dict[str, str | int | float]) -> None:
+        rows = self.summary_rows()
+        if not rows:
+            return
+        path = Path(path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        fieldnames = list(metadata.keys()) + [
+            "name",
+            "count",
+            "mean_ms",
+            "std_ms",
+            "p50_ms",
+            "p95_ms",
+            "p99_ms",
+            "min_ms",
+            "max_ms",
+        ]
+        with path.open("w", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            for row in rows:
+                writer.writerow({**metadata, **row})
+        print(f"[INFO] Timing summary saved to: {path}")
 
 
 def project_to_so3(R: np.ndarray) -> np.ndarray:
@@ -193,6 +269,18 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     parser.add_argument(
+        "--timing_csv",
+        default=None,
+        help="Optional CSV path for aggregated execution timing statistics.",
+    )
+
+    parser.add_argument(
+        "--no_timing_summary",
+        action="store_true",
+        help="Disable final timing summary printout.",
+    )
+
+    parser.add_argument(
         "--max_target_speed",
         type=float,
         default=0.35,
@@ -318,6 +406,7 @@ def main() -> None:
 
     traj_exec.reset(init_eef_pos, init_eef_quat, init_gripper, env.data.time)
     target_smoother.reset(init_eef_pos, init_eef_quat, init_gripper)
+    timing_stats = TimingStats()
 
     print()
     print("===========================================")
@@ -342,12 +431,12 @@ def main() -> None:
 
     prev_sim_time = env.data.time
     last_viewer_sync_wall_t = 0.0
-    last_debug_wall_t = time.time()
+    last_debug_wall_t = time.perf_counter()
     safety_hold = False
 
     with mujoco.viewer.launch_passive(env.model, env.data) as viewer:
         while viewer.is_running():
-            step_wall_start = time.time()
+            step_wall_start = time.perf_counter()
 
             if env.data.time < prev_sim_time:
                 print("[Info] MuJoCo reset detected. Resetting internal buffers/state.")
@@ -377,17 +466,25 @@ def main() -> None:
             current_result = None
 
             if (not safety_hold) and traj_exec.needs_replan(env.data.time):
+                obs_update_start = time.perf_counter()
                 builder.update()
+                timing_stats.add("obs_update", time.perf_counter() - obs_update_start)
 
                 if not traj_exec.has_buffered_actions():
+                    build_tensor_start = time.perf_counter()
                     obs_tensor = builder.build_tensor()
+                    timing_stats.add(
+                        "build_tensor",
+                        time.perf_counter() - build_tensor_start,
+                    )
 
-                    infer_wall_start = time.time()
+                    infer_wall_start = time.perf_counter()
 
                     with torch.inference_mode():
                         policy_out = policy.predict_action(obs_tensor)
 
-                    infer_dt = time.time() - infer_wall_start
+                    infer_dt = time.perf_counter() - infer_wall_start
+                    timing_stats.add("inference", infer_dt)
 
                     action_seq = extract_action_sequence(policy_out)
                     n_take = traj_exec.set_sequence(action_seq)
@@ -416,6 +513,7 @@ def main() -> None:
                     dt=sim_dt,
                 )
 
+                servo_start = time.perf_counter()
                 current_result = servo.compute(
                     env.model,
                     env.data,
@@ -426,6 +524,7 @@ def main() -> None:
                     target_rot,
                     gripper_cmd,
                 )
+                timing_stats.add("servo_compute", time.perf_counter() - servo_start)
 
                 env.apply_joint_command(
                     current_result["q_target"],
@@ -464,7 +563,9 @@ def main() -> None:
                     env.data.qpos[6] if env.data.qpos.shape[0] > 6 else -0.2,
                 )
 
+                mj_step_start = time.perf_counter()
                 mujoco.mj_step(env.model, env.data)
+                timing_stats.add("mj_step", time.perf_counter() - mj_step_start)
 
                 if args.save_traj:
                     recorded_qpos.append(env.data.qpos.copy())
@@ -472,18 +573,21 @@ def main() -> None:
                     recorded_qacc.append(env.data.qacc.copy())
                     recorded_time.append(float(env.data.time))
 
-                if (time.time() - last_viewer_sync_wall_t) >= (1.0 / args.viewer_fps):
+                if (time.perf_counter() - last_viewer_sync_wall_t) >= (1.0 / args.viewer_fps):
                     viewer.sync()
-                    last_viewer_sync_wall_t = time.time()
+                    last_viewer_sync_wall_t = time.perf_counter()
 
                 if args.real_time_sync:
-                    elapsed = time.time() - step_wall_start
+                    elapsed = time.perf_counter() - step_wall_start
                     if elapsed < sim_dt:
                         time.sleep(sim_dt - elapsed)
 
+                timing_stats.add("loop_total", time.perf_counter() - step_wall_start)
                 continue
 
+            mj_step_start = time.perf_counter()
             mujoco.mj_step(env.model, env.data)
+            timing_stats.add("mj_step", time.perf_counter() - mj_step_start)
 
             dynamic_status = dynamic_safety_checker.check_loop(
                 qvel=env.data.qvel,
@@ -517,7 +621,7 @@ def main() -> None:
                 recorded_qacc.append(env.data.qacc.copy())
                 recorded_time.append(float(env.data.time))
 
-            now_wall = time.time()
+            now_wall = time.perf_counter()
 
             if (now_wall - last_viewer_sync_wall_t) >= (1.0 / args.viewer_fps):
                 viewer.sync()
@@ -533,9 +637,10 @@ def main() -> None:
                 last_debug_wall_t = now_wall
 
             if args.real_time_sync:
-                elapsed = time.time() - step_wall_start
+                elapsed = time.perf_counter() - step_wall_start
                 if elapsed < sim_dt:
                     time.sleep(sim_dt - elapsed)
+            timing_stats.add("loop_total", time.perf_counter() - step_wall_start)
 
     if args.save_traj and len(recorded_qpos) > 0:
         Path(args.save_traj_path).parent.mkdir(parents=True, exist_ok=True)
@@ -550,6 +655,25 @@ def main() -> None:
 
         print(f"\n[INFO] Trajectory saved to: {args.save_traj_path}")
         print(f"       ({len(recorded_qpos)} frames recorded)")
+
+    if not args.no_timing_summary:
+        timing_stats.print_summary()
+
+    if args.timing_csv is not None:
+        timing_stats.save_csv(
+            args.timing_csv,
+            metadata={
+                "checkpoint": str(args.checkpoint),
+                "device": str(device),
+                "policy_hz": float(args.policy_hz),
+                "pred_horizon": int(pred_horizon),
+                "exec_horizon": int(exec_horizon),
+                "obs_h": int(obs_h),
+                "obs_w": int(obs_w),
+                "viewer_fps": float(args.viewer_fps),
+                "real_time_sync": int(bool(args.real_time_sync)),
+            },
+        )
 
 
 if __name__ == "__main__":

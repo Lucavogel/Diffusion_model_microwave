@@ -1,9 +1,0 @@
-setup.py
-onrobot_rg_msgs/__init__.py
-onrobot_rg_msgs.egg-info/PKG-INFO
-onrobot_rg_msgs.egg-info/SOURCES.txt
-onrobot_rg_msgs.egg-info/dependency_links.txt
-onrobot_rg_msgs.egg-info/top_level.txt
-onrobot_rg_msgs/msg/__init__.py
-onrobot_rg_msgs/msg/_on_robot_rg_input.py
-onrobot_rg_msgs/msg/_on_robot_rg_output.py

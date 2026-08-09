@@ -50,3 +50,39 @@ def make_default_real_dataset_path(
         Path(root).expanduser()
         / f"real_demo_data_{timestamp}.zarr"
     )
+
+
+def find_latest_real_dataset_path(
+    root: str = "data/datasets",
+    pattern: str = "real_demo_data_*.zarr",
+) -> Optional[str]:
+    root_path = Path(root).expanduser()
+    if not root_path.exists():
+        return None
+
+    candidates = [
+        path
+        for path in root_path.glob(pattern)
+        if path.is_dir()
+    ]
+    if not candidates:
+        return None
+
+    latest = max(candidates, key=lambda path: path.stat().st_mtime)
+    return str(latest)
+
+
+def resolve_real_dataset_path(
+    dataset_path: Optional[str] = None,
+    append_latest: bool = False,
+    root: str = "data/datasets",
+) -> tuple[str, str]:
+    if dataset_path:
+        return str(Path(dataset_path).expanduser()), "explicit"
+
+    if append_latest:
+        latest_path = find_latest_real_dataset_path(root=root)
+        if latest_path is not None:
+            return latest_path, "latest"
+
+    return make_default_real_dataset_path(root=root), "new"

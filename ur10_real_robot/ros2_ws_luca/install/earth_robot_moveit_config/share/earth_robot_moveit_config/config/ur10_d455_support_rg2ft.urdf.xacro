@@ -1,5 +1,0 @@
-<?xml version="1.0"?>
-<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="ur10_d455_support_rg2ft">
-    <!-- Reuse the validated combined robot description from the shared description package. -->
-    <xacro:include filename="$(find realsense2_description)/urdf/ur10_d455_support_rg2ft_driver.urdf" />
-</robot>

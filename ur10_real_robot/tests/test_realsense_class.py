@@ -17,7 +17,7 @@ def main() -> None:
         fps=30,
         output_size=(320, 240),
         display_size=(640, 480),
-        serial_number=SERIAL_NUMBER_FRONT,
+        serial_number=SERIAL_NUMBER_TOP_DOWN,
         apply_advanced_config=True,
     )
 

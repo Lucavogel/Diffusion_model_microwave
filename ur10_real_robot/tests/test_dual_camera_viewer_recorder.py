@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import time
+from pathlib import Path
 
 import cv2
 import numpy as np
@@ -10,7 +11,7 @@ import numpy as np
 from ur10_real_robot.camera import DualCameraRig
 from ur10_real_robot.teleop.real_dataset_writer import (
     RealZarrEpisodeWriter,
-    make_default_real_dataset_path,
+    resolve_real_dataset_path,
 )
 from ur10_real_robot.teleop.real_episode_recorder import RealEpisodeRecorder
 
@@ -19,6 +20,14 @@ CONFIG_PATH = (
     "/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/"
     "ur10_real_robot/camera/config/d435i_config.json"
 )
+TOP_CONFIG_PATH = (
+    "/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/"
+    "ur10_real_robot/camera/config/d435_config_dataset.json"
+)
+WRIST_CONFIG_PATH = (
+    "/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/"
+    "ur10_real_robot/camera/config/d455_config_dataset.json"
+)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -26,9 +35,11 @@ def build_parser() -> argparse.ArgumentParser:
         description="Preview two cameras and test real dataset recording.",
     )
     parser.add_argument("--fake", action="store_true", help="Use synthetic cameras.")
-    parser.add_argument("--top-serial", default=332322072359, help="Top-down camera serial.")
-    parser.add_argument("--wrist-serial", default=043422251624, help="Wrist camera serial.")
+    parser.add_argument("--top-serial", default="332322072359", help="Top-down camera serial.")
+    parser.add_argument("--wrist-serial", default="043422251624", help="Wrist camera serial.")
     parser.add_argument("--config-path", default=CONFIG_PATH, help="RealSense JSON config.")
+    parser.add_argument("--top-config-path", default=TOP_CONFIG_PATH)
+    parser.add_argument("--wrist-config-path", default=WRIST_CONFIG_PATH)
     parser.add_argument("--no-advanced-config", action="store_true")
     parser.add_argument("--capture-width", type=int, default=640)
     parser.add_argument("--capture-height", type=int, default=480)
@@ -37,8 +48,40 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--dataset-height", type=int, default=240)
     parser.add_argument("--display-width", type=int, default=640)
     parser.add_argument("--display-height", type=int, default=480)
+    parser.add_argument(
+        "--top-crop",
+        nargs=4,
+        type=int,
+        metavar=("X", "Y", "W", "H"),
+        default=None,
+        help="Crop top camera in raw capture pixels before resizing.",
+    )
+    parser.add_argument(
+        "--wrist-crop",
+        nargs=4,
+        type=int,
+        metavar=("X", "Y", "W", "H"),
+        default=None,
+        help="Crop wrist camera in raw capture pixels before resizing.",
+    )
     parser.add_argument("--record-freq", type=float, default=10.0)
-    parser.add_argument("--dataset-path", default=None)
+    parser.add_argument(
+        "--min-episode-steps",
+        type=int,
+        default=3,
+        help="Do not save an episode with fewer recorded steps than this.",
+    )
+    parser.add_argument(
+        "--dataset-path",
+        default=None,
+        help="Output zarr path. If it exists, new episodes are appended.",
+    )
+    parser.add_argument(
+        "--append-latest-dataset",
+        action="store_true",
+        help="Append to the latest data/datasets/real_demo_data_*.zarr.",
+    )
+    parser.add_argument("--dataset-root", default="data/datasets")
     return parser
 
 
@@ -88,7 +131,11 @@ def main() -> None:
 
     dataset_size = (args.dataset_width, args.dataset_height)
     display_size = (args.display_width, args.display_height)
-    dataset_path = args.dataset_path or make_default_real_dataset_path()
+    dataset_path, dataset_mode = resolve_real_dataset_path(
+        dataset_path=args.dataset_path,
+        append_latest=args.append_latest_dataset,
+        root=args.dataset_root,
+    )
 
     print("-------------------------------------------")
     print("DUAL CAMERA VIEWER / RECORDER")
@@ -96,16 +143,25 @@ def main() -> None:
     print(f"fake          : {args.fake}")
     print(f"top serial    : {args.top_serial}")
     print(f"wrist serial  : {args.wrist_serial}")
+    print(f"top config    : {args.top_config_path}")
+    print(f"wrist config  : {args.wrist_config_path}")
+    print(f"advanced cfg  : {not args.no_advanced_config}")
     print(f"capture       : {args.capture_width}x{args.capture_height} @ {args.fps}")
     print(f"dataset image : {args.dataset_width}x{args.dataset_height}")
+    print(f"top crop      : {args.top_crop}")
+    print(f"wrist crop    : {args.wrist_crop}")
     print(f"record freq   : {args.record_freq:.1f} Hz")
     print(f"dataset path  : {dataset_path}")
+    print(f"dataset mode  : {dataset_mode}")
+    print(f"min steps     : {args.min_episode_steps}")
     print("-------------------------------------------")
 
     cameras = DualCameraRig(
         top_serial=args.top_serial,
         wrist_serial=args.wrist_serial,
         config_path=args.config_path,
+        top_config_path=args.top_config_path,
+        wrist_config_path=args.wrist_config_path,
         capture_width=args.capture_width,
         capture_height=args.capture_height,
         fps=args.fps,
@@ -113,11 +169,17 @@ def main() -> None:
         display_size=display_size,
         fake=args.fake,
         apply_advanced_config=not args.no_advanced_config,
+        top_crop=args.top_crop,
+        wrist_crop=args.wrist_crop,
     )
     recorder = RealEpisodeRecorder(enabled=True, record_freq=args.record_freq)
-    writer = RealZarrEpisodeWriter(dataset_path)
+    writer = None
 
-    saved_episodes = writer.n_episodes
+    saved_episodes = 0
+    if Path(dataset_path).exists():
+        writer = RealZarrEpisodeWriter(dataset_path)
+        saved_episodes = writer.n_episodes
+
     last_space = 0.0
     gripper_cmd = -0.2
 
@@ -174,7 +236,15 @@ def main() -> None:
                     episode_np = recorder.to_numpy()
                     if episode_np is None:
                         print("[REC] Empty episode, not saved.")
+                    elif len(recorder) < args.min_episode_steps:
+                        print(
+                            f"[REC] Episode too short ({len(recorder)} steps), "
+                            "not saved."
+                        )
+                        recorder.cancel()
                     else:
+                        if writer is None:
+                            writer = RealZarrEpisodeWriter(dataset_path)
                         saved_episodes = writer.add_episode(episode_np)
                         print(
                             f"[REC] Saved episode with {len(recorder)} steps. "

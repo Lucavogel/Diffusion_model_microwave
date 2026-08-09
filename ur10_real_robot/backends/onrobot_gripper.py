@@ -221,6 +221,7 @@ class AsyncOnRobotGripperController:
         self.last_sent_width_mm: float | None = None
         self.button_direction = 0
         self.last_button_direction = 0
+        self.one_shot_width_mm: float | None = None
         self.stop_requested = False
         self.last_status: OnRobotGripperStatus | None = None
         self.last_error: str | None = None
@@ -273,6 +274,53 @@ class AsyncOnRobotGripperController:
 
         return target_width_mm
 
+    def request_open(self) -> float:
+        """Request a one-shot open command, even if button mode was already open."""
+        with self.lock:
+            self.target_width_mm = self.open_width_mm
+            self.button_direction = 1
+            self.last_button_direction = 0
+            self.stop_requested = False
+        return self.open_width_mm
+
+    def request_width(self, width_mm: float) -> float:
+        """Request a target width without blocking the caller."""
+        width_mm = max(0.0, min(self.gripper.MAX_WIDTH_MM, float(width_mm)))
+        with self.lock:
+            self.target_width_mm = width_mm
+            self.one_shot_width_mm = width_mm
+            self.button_direction = 0
+            self.last_button_direction = 0
+            self.stop_requested = False
+        return width_mm
+
+    def move_to_width_sync(
+        self,
+        width_mm: float,
+        timeout: float = 4.0,
+    ) -> float:
+        """Command a width now and optionally wait for the gripper to become idle."""
+        width_mm = self.request_width(width_mm)
+        if not self.enabled:
+            return width_mm
+
+        self.gripper.command_width(width_mm, force_n=self.force_n)
+        status = self.gripper.wait_until_idle(timeout=timeout)
+        with self.lock:
+            self.last_status = status
+            self.last_error = None
+            self.last_sent_width_mm = width_mm
+        return status.width_mm
+
+    def request_close(self) -> float:
+        """Request a one-shot close command, even if button mode was already close."""
+        with self.lock:
+            self.target_width_mm = self.close_width_mm
+            self.button_direction = -1
+            self.last_button_direction = 0
+            self.stop_requested = False
+        return self.close_width_mm
+
     def command_to_width(self, command: float) -> float:
         if self.cmd_max <= self.cmd_min:
             alpha = 0.0
@@ -280,6 +328,15 @@ class AsyncOnRobotGripperController:
             alpha = (float(command) - self.cmd_min) / (self.cmd_max - self.cmd_min)
         alpha = max(0.0, min(1.0, alpha))
         return (1.0 - alpha) * self.open_width_mm + alpha * self.close_width_mm
+
+    def width_to_command(self, width_mm: float) -> float:
+        width_range = self.open_width_mm - self.close_width_mm
+        if abs(width_range) <= 1e-9 or self.cmd_max <= self.cmd_min:
+            alpha = 0.0
+        else:
+            alpha = (self.open_width_mm - float(width_mm)) / width_range
+        alpha = max(0.0, min(1.0, alpha))
+        return self.cmd_min + alpha * (self.cmd_max - self.cmd_min)
 
     def get_status_snapshot(self) -> tuple[OnRobotGripperStatus | None, str | None]:
         with self.lock:
@@ -289,6 +346,8 @@ class AsyncOnRobotGripperController:
         while not self.stop_event.is_set():
             with self.lock:
                 target_width_mm = self.target_width_mm
+                one_shot_width_mm = self.one_shot_width_mm
+                self.one_shot_width_mm = None
                 last_sent_width_mm = self.last_sent_width_mm
                 button_direction = self.button_direction
                 stop_requested = self.stop_requested
@@ -301,7 +360,13 @@ class AsyncOnRobotGripperController:
                     self.last_status = status
                     self.last_error = None
 
-                if self.enabled and self.control_mode == "button":
+                if self.enabled and one_shot_width_mm is not None:
+                    self.gripper.command_width(one_shot_width_mm, force_n=self.force_n)
+                    with self.lock:
+                        self.last_sent_width_mm = one_shot_width_mm
+                    self.last_button_direction = button_direction
+
+                elif self.enabled and self.control_mode == "button":
                     if button_direction != self.last_button_direction:
                         if button_direction > 0:
                             self.gripper.command_width(

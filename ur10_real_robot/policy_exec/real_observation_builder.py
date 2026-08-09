@@ -17,10 +17,12 @@ class RealObservationBuilder:
         cameras,
         image_height: int,
         image_width: int,
+        gripper_qpos_fn=None,
     ) -> None:
         self.device = device
         self.robot = robot
         self.cameras = cameras
+        self.gripper_qpos_fn = gripper_qpos_fn
         self.n_obs_steps = int(cfg.n_obs_steps)
         self.image_height = int(image_height)
         self.image_width = int(image_width)
@@ -73,7 +75,16 @@ class RealObservationBuilder:
 
         eef_pos = np.asarray(self.robot.get_eef_pos(), dtype=np.float64).reshape(3)
         eef_quat = np.asarray(self.robot.get_eef_quat(), dtype=np.float64).reshape(4)
-        gripper_qpos = np.asarray(self.robot.get_gripper_qpos(), dtype=np.float64).reshape(1)
+        if self.gripper_qpos_fn is None:
+            gripper_qpos = np.asarray(
+                self.robot.get_gripper_qpos(),
+                dtype=np.float64,
+            ).reshape(1)
+        else:
+            gripper_qpos = np.asarray(
+                self.gripper_qpos_fn(),
+                dtype=np.float64,
+            ).reshape(1)
 
         self.obs_hist["agentview_image"].append(self.preprocess_rgb(img_agent))
         self.obs_hist["robot0_eye_in_hand_image"].append(self.preprocess_rgb(img_wrist))

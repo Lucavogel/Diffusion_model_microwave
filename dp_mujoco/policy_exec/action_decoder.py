@@ -28,10 +28,11 @@ def decode_action(
 	action: np.ndarray,
 	ignore_action_orientation: bool,
 	current_rot: np.ndarray,
+	quat_format: str = "xyzw",
 ) -> Tuple[np.ndarray, np.ndarray, float]:
 	"""
 	Supporte:
-	  - 8D  = [x,y,z,qx,qy,qz,qw,gripper]
+	  - 8D  = [x,y,z,quat(4),gripper]
 	  - 10D = [x,y,z,r6d(6),gripper]
 	Retourne target_pos, target_rot, gripper_cmd.
 	"""
@@ -42,11 +43,17 @@ def decode_action(
 		target_pos = action[:3].astype(np.float64)
 		target_quat = action[3:7].astype(np.float64)
 		target_quat /= np.linalg.norm(target_quat) + 1e-12
+		if quat_format == "xyzw":
+			qx, qy, qz, qw = target_quat
+		elif quat_format == "wxyz":
+			qw, qx, qy, qz = target_quat
+		else:
+			raise ValueError(f"Unknown quat_format: {quat_format}")
 		target_rot = quat_to_rot(
-			float(target_quat[0]),
-			float(target_quat[1]),
-			float(target_quat[2]),
-			float(target_quat[3]),
+			float(qx),
+			float(qy),
+			float(qz),
+			float(qw),
 		)
 		gripper_cmd = float(action[7])
 	elif action.shape[0] == 10:

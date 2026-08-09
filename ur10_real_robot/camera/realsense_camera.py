@@ -25,6 +25,7 @@ class RealSenseCamera:
         display_size: tuple[int, int] = (640, 480),
         serial_number: Optional[str] = None,
         apply_advanced_config: bool = True,
+        crop: Optional[tuple[int, int, int, int]] = None,
     ):
         self.config_path = config_path
         self.width = int(width)
@@ -34,6 +35,9 @@ class RealSenseCamera:
         self.display_size = display_size
         self.serial_number = serial_number
         self.apply_advanced_config = apply_advanced_config
+        self.crop = None if crop is None else tuple(int(v) for v in crop)
+        self.advanced_config_loaded = False
+        self.advanced_config_path_loaded: Optional[str] = None
 
         self.pipeline: Optional[rs.pipeline] = None
         self.profile = None
@@ -73,7 +77,10 @@ class RealSenseCamera:
 
     def _load_advanced_json_config(self) -> None:
         if self.config_path is None:
-            return
+            raise RuntimeError(
+                "RealSense advanced config is required, but config_path is None. "
+                "Pass --no-advanced-config only for an intentional no-config run."
+            )
 
         json_path = Path(self.config_path)
 
@@ -94,8 +101,27 @@ class RealSenseCamera:
         json_text = json_path.read_text()
         json.loads(json_text)
 
-        adv.load_json(json_text)
-        print("[RealSense] Advanced JSON config loaded.")
+        last_error = None
+        for attempt in range(1, 4):
+            try:
+                adv.load_json(json_text)
+                print("[RealSense] Advanced JSON config loaded.")
+                self.advanced_config_loaded = True
+                self.advanced_config_path_loaded = str(json_path)
+                return
+            except RuntimeError as exc:
+                last_error = exc
+                print(
+                    "[RealSense] Advanced JSON config failed "
+                    f"(attempt {attempt}/3): {exc}"
+                )
+                time.sleep(1.0)
+                dev = self._get_device()
+                adv = rs.rs400_advanced_mode(dev)
+
+        raise RuntimeError(
+            f"Failed to load RealSense advanced JSON config: {last_error}"
+        )
 
     def start(self) -> None:
         if self.started:
@@ -108,6 +134,10 @@ class RealSenseCamera:
 
         if self.apply_advanced_config:
             self._load_advanced_json_config()
+            if not self.advanced_config_loaded:
+                raise RuntimeError(
+                    f"RealSense advanced JSON config was not loaded: {self.config_path}"
+                )
 
         self.pipeline = rs.pipeline()
         config = rs.config()
@@ -128,6 +158,7 @@ class RealSenseCamera:
 
         print("[RealSense] Pipeline started.")
         print(f"[RealSense] Capture: {self.width}x{self.height} @ {self.fps} FPS")
+        print(f"[RealSense] Crop: {self.crop}")
         print(f"[RealSense] Display size: {self.display_size}")
         print(f"[RealSense] Dataset size: {self.output_size}")
 
@@ -143,14 +174,37 @@ class RealSenseCamera:
 
         return np.asanyarray(color_frame.get_data())
 
+    def _crop_bgr(self, bgr: np.ndarray) -> np.ndarray:
+        if self.crop is None:
+            return bgr
+
+        x, y, width, height = self.crop
+        if width <= 0 or height <= 0:
+            raise ValueError(f"Invalid crop size: {self.crop}")
+
+        img_h, img_w = bgr.shape[:2]
+        x0 = max(0, min(x, img_w))
+        y0 = max(0, min(y, img_h))
+        x1 = max(0, min(x + width, img_w))
+        y1 = max(0, min(y + height, img_h))
+
+        if x1 <= x0 or y1 <= y0:
+            raise ValueError(
+                f"Crop {self.crop} is outside image bounds {img_w}x{img_h}."
+            )
+
+        return bgr[y0:y1, x0:x1]
+
     def process_bgr(self, bgr: np.ndarray) -> dict[str, np.ndarray]:
+        cropped_bgr = self._crop_bgr(bgr)
+
         display_bgr = cv2.resize(
-            bgr,
+            cropped_bgr,
             self.display_size,
             interpolation=cv2.INTER_NEAREST,
         )
 
-        rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
+        rgb = cv2.cvtColor(cropped_bgr, cv2.COLOR_BGR2RGB)
 
         rgb_resized = cv2.resize(
             rgb,
@@ -160,6 +214,7 @@ class RealSenseCamera:
 
         return {
             "bgr": bgr,
+            "cropped_bgr": cropped_bgr,
             "display_bgr": display_bgr,
             "rgb_resized": rgb_resized,
         }

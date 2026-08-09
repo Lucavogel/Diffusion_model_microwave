@@ -1,1 +1,0 @@
-/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/src/ur_robot_description_cb2/test/test_ur_urdf_xacro.py

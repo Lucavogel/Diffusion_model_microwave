@@ -100,7 +100,7 @@ training:
   use_ema: True
   freeze_encoder: False
   rollout_every: 50
-  checkpoint_every: 20
+  checkpoint_every: 50
   val_every: 1
   sample_every: 5
   max_train_steps: null

@@ -1,7 +1,0 @@
-[01m[K/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/ros2_ws_luca/src/earth_robot_moveit_config/src/scene_waypoint_runner.cpp:19:10:[m[K [01;31m[Kfatal error: [m[Kmoveit/move_group_interface/move_group_interface.hpp: No such file or directory
-   19 | #include [01;31m[K<moveit/move_group_interface/move_group_interface.hpp>[m[K
-      |          [01;31m[K^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[m[K
-compilation terminated.
-gmake[2]: *** [CMakeFiles/scene_waypoint_runner.dir/build.make:76: CMakeFiles/scene_waypoint_runner.dir/src/scene_waypoint_runner.cpp.o] Error 1
-gmake[1]: *** [CMakeFiles/Makefile2:137: CMakeFiles/scene_waypoint_runner.dir/all] Error 2
-gmake: *** [Makefile:146: all] Error 2

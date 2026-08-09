@@ -12,10 +12,19 @@ from dp_mujoco.policy_exec.action_decoder import decode_action
 
 
 class TrajectoryExecutor:
-	def __init__(self, action_dt: float, exec_horizon: int, ignore_action_orientation: bool = False):
+	def __init__(
+		self,
+		action_dt: float,
+		exec_horizon: int,
+		ignore_action_orientation: bool = False,
+		action_quat_format: str = "xyzw",
+	):
 		self.action_dt = float(action_dt)
 		self.exec_horizon = int(exec_horizon)
 		self.ignore_action_orientation = bool(ignore_action_orientation)
+		if action_quat_format not in {"xyzw", "wxyz"}:
+			raise ValueError(f"Unknown action_quat_format: {action_quat_format}")
+		self.action_quat_format = str(action_quat_format)
 
 		self.action_buffer: Deque[np.ndarray] = collections.deque()
 		self.current_action: Optional[np.ndarray] = None
@@ -80,6 +89,7 @@ class TrajectoryExecutor:
 			self.current_action,
 			ignore_action_orientation=self.ignore_action_orientation,
 			current_rot=current_rot,
+			quat_format=self.action_quat_format,
 		)
 		new_end_quat = rot_to_quat(new_end_rot)
 		new_end_quat = np.array([new_end_quat[3], new_end_quat[0], new_end_quat[1], new_end_quat[2]], dtype=np.float32)
