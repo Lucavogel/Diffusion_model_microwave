@@ -1,3 +1,5 @@
+
+
 # Diffusion Policy for Robotic Manipulation
 
 This repository contains a complete **Diffusion Policy pipeline for robotic
@@ -31,7 +33,7 @@ The objects are initialized with a random offset of +/- 0.2 m along the y-axis.*
 
 ### Real Robot
 
-REAL_ROBOT_VIDEO_LINK
+https://github.com/user-attachments/assets/07e6fe3c-cc80-408b-ac51-6cc0935d3b6b
 
 *Diffusion Policy executing a microwave component extraction task on the physical
 UR10, with small variations in the initial object position. The policy was
