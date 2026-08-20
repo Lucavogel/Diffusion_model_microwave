@@ -1,7 +1,7 @@
 name: e_waste_image_real
 
 image_shape: [3, 240, 320]
-dataset_path: data/datasets/real_demo_microwave_v3.zarr
+dataset_path: data/datasets/real_demo_microwave_manual_light_v2_20260814.zarr
 
 shape_meta: &shape_meta
   obs:

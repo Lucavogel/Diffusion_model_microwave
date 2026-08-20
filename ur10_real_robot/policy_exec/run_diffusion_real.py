@@ -96,6 +96,14 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Run policy inference in a background thread so the robot loop keeps streaming commands.",
     )
+    parser.add_argument(
+        "--async-hold-current-pose",
+        action="store_true",
+        help=(
+            "While asynchronous inference is running, hold the measured robot "
+            "pose instead of continuing toward the last, now stale, policy target."
+        ),
+    )
 
     parser.add_argument("--backend", choices=["fake", "speedj"], default="fake")
     parser.add_argument("--robot-ip", default="192.168.2.100")
@@ -508,6 +516,7 @@ def main() -> None:
         print(f"obs            : {obs_h}x{obs_w} x {n_obs_steps}")
         print(f"policy_hz      : {args.policy_hz}")
         print(f"exec_horizon   : {exec_horizon}")
+        print(f"async hold     : {args.async_hold_current_pose}")
         print(f"action quat    : {args.action_quat_format}")
         print(f"control_hz     : {args.control_hz}")
         print(f"tcp offset     : {np.array(args.tcp_offset, dtype=np.float64)}")
@@ -653,6 +662,24 @@ def main() -> None:
                             if not inference_busy:
                                 builder.update()
                                 obs_tensor = builder.build_tensor()
+                                if args.async_hold_current_pose:
+                                    hold_pos = builder.get_latest_eef_pos()
+                                    hold_quat = builder.get_latest_eef_quat()
+                                    hold_gripper = builder.get_latest_gripper_qpos()
+                                    traj_exec.reset(
+                                        hold_pos,
+                                        hold_quat,
+                                        hold_gripper,
+                                        current_policy_t,
+                                    )
+                                    target_smoother.reset(
+                                        hold_pos,
+                                        hold_quat,
+                                        hold_gripper,
+                                    )
+                                    servo.reset(q_current)
+                                    if args.verbose_plan:
+                                        print("[ASYNC] Holding measured pose during inference.")
                                 start_async_inference(obs_tensor)
                     else:
                         builder.update()

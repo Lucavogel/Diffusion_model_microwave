@@ -29,6 +29,8 @@ if [[ "$REAL_DATASET_PRESET" == "1" ]]; then
   export SPEEDJ_A="${SPEEDJ_A:-0.04}"
   export POSITION_SCALE="${POSITION_SCALE:-0.50}"
   export MAX_TARGET_SPEED="${MAX_TARGET_SPEED:-0.08}"
+  export MAX_POS_ERROR_STOP="${MAX_POS_ERROR_STOP:-0.20}"
+  export MAX_ROT_ERROR_STOP="${MAX_ROT_ERROR_STOP:-0.60}"
   export TARGET_ALPHA_POS="${TARGET_ALPHA_POS:-0.45}"
   export TARGET_ALPHA_ROT="${TARGET_ALPHA_ROT:-0.25}"
   export TOUCH_AXIS_MAP="${TOUCH_AXIS_MAP:-swap_xy_neg_y}"
@@ -76,6 +78,8 @@ export ALPHA_DQ="${ALPHA_DQ:-0.04}"
 export SPEEDJ_A="${SPEEDJ_A:-0.06}"
 export POSITION_SCALE="${POSITION_SCALE:-0.15}"
 export MAX_TARGET_SPEED="${MAX_TARGET_SPEED:-0.05}"
+export MAX_POS_ERROR_STOP="${MAX_POS_ERROR_STOP:-0.20}"
+export MAX_ROT_ERROR_STOP="${MAX_ROT_ERROR_STOP:-0.60}"
 export TARGET_ALPHA_POS="${TARGET_ALPHA_POS:-0.25}"
 export TARGET_ALPHA_ROT="${TARGET_ALPHA_ROT:-0.15}"
 export TOUCH_AXIS_MAP="${TOUCH_AXIS_MAP:-swap_xy_neg_y}"
@@ -135,6 +139,8 @@ echo "kp pos           : $KP_POS"
 echo "max joint vel    : $MAX_JOINT_VEL"
 echo "position scale   : $POSITION_SCALE"
 echo "max target speed : $MAX_TARGET_SPEED"
+echo "max pos err stop : $MAX_POS_ERROR_STOP"
+echo "max rot err stop : $MAX_ROT_ERROR_STOP"
 echo "target alpha pos : $TARGET_ALPHA_POS"
 echo "target alpha rot : $TARGET_ALPHA_ROT"
 echo "touch axis map   : $TOUCH_AXIS_MAP"
@@ -250,6 +256,8 @@ python3 -m ur10_real_robot.run_real_teleop \
   --speedj-a "${SPEEDJ_A:-0.06}" \
   --position-scale "${POSITION_SCALE:-0.15}" \
   --max-target-speed "${MAX_TARGET_SPEED:-0.05}" \
+  --max-pos-error-stop "${MAX_POS_ERROR_STOP:-0.20}" \
+  --max-rot-error-stop "${MAX_ROT_ERROR_STOP:-0.60}" \
   --target-alpha-pos "${TARGET_ALPHA_POS:-0.25}" \
   --target-alpha-rot "${TARGET_ALPHA_ROT:-0.15}" \
   --touch-axis-map "${TOUCH_AXIS_MAP:-swap_xy_neg_y}" \

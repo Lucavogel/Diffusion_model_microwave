@@ -32,6 +32,7 @@ export EXEC_HORIZON="${EXEC_HORIZON:-8}"
 export NUM_INFERENCE_STEPS="${NUM_INFERENCE_STEPS:-8}"
 export TORCH_NUM_THREADS="${TORCH_NUM_THREADS:-}"
 export ASYNC_INFERENCE="${ASYNC_INFERENCE:-1}"
+export ASYNC_HOLD_CURRENT_POSE="${ASYNC_HOLD_CURRENT_POSE:-0}"
 
 export KP_POS="${KP_POS:-0.40}"
 export KP_ROT="${KP_ROT:-0.30}"
@@ -96,6 +97,7 @@ echo "base rz deg      : $BASE_RZ_DEG"
 echo "policy hz        : $POLICY_HZ"
 echo "exec horizon     : $EXEC_HORIZON"
 echo "infer steps      : $NUM_INFERENCE_STEPS"
+echo "async hold       : $ASYNC_HOLD_CURRENT_POSE"
 echo "kp pos/rot       : $KP_POS / $KP_ROT"
 echo "max joint vel    : $MAX_JOINT_VEL"
 echo "max target speed : $MAX_TARGET_SPEED"
@@ -121,6 +123,11 @@ fi
 async_arg=()
 if [[ "$ASYNC_INFERENCE" == "1" ]]; then
   async_arg+=(--async-inference)
+fi
+
+async_hold_arg=()
+if [[ "$ASYNC_HOLD_CURRENT_POSE" == "1" ]]; then
+  async_hold_arg+=(--async-hold-current-pose)
 fi
 
 threads_arg=()
@@ -232,6 +239,7 @@ tcp_offset=(${=TCP_OFFSET})
   --num-inference-steps "$NUM_INFERENCE_STEPS" \
   ${threads_arg[@]} \
   ${async_arg[@]} \
+  ${async_hold_arg[@]} \
   --kp-pos "$KP_POS" \
   --kp-rot "$KP_ROT" \
   --max-joint-vel "$MAX_JOINT_VEL" \

@@ -6,6 +6,7 @@ import math
 import threading
 import time
 from pathlib import Path
+from typing import Optional
 
 import cv2
 import numpy as np
@@ -340,6 +341,20 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     parser.add_argument(
+        "--max-pos-error-stop",
+        type=float,
+        default=0.20,
+        help="Stop teleoperation when the Cartesian position tracking error exceeds this value in metres.",
+    )
+
+    parser.add_argument(
+        "--max-rot-error-stop",
+        type=float,
+        default=0.60,
+        help="Stop teleoperation when the orientation tracking error exceeds this value in radians.",
+    )
+
+    parser.add_argument(
         "--disable-watchdog",
         action="store_true",
         help="Disable Touch target watchdog.",
@@ -574,6 +589,11 @@ def draw_camera_overlay(
     homing: bool,
     steps: int,
     saved_episodes: int,
+    pos_error: Optional[np.ndarray] = None,
+    rot_error_norm: Optional[float] = None,
+    max_pos_error: Optional[float] = None,
+    max_rot_error: Optional[float] = None,
+    safety_stop: bool = False,
 ) -> np.ndarray:
     out = image_bgr.copy()
     color = (
@@ -592,6 +612,53 @@ def draw_camera_overlay(
         2,
         cv2.LINE_AA,
     )
+
+    if pos_error is not None:
+        pos_error = np.asarray(pos_error, dtype=np.float64).reshape(3)
+        pos_error_norm = float(np.linalg.norm(pos_error))
+        pos_limit = float(max_pos_error) if max_pos_error is not None else np.inf
+        rot_limit = float(max_rot_error) if max_rot_error is not None else np.inf
+        rot_value = float(rot_error_norm) if rot_error_norm is not None else 0.0
+        limit_exceeded = pos_error_norm > pos_limit or rot_value > rot_limit
+        near_limit = (
+            pos_error_norm > 0.8 * pos_limit
+            or rot_value > 0.8 * rot_limit
+        )
+        if safety_stop or limit_exceeded:
+            error_color = (0, 0, 255)
+        elif near_limit:
+            error_color = (0, 220, 255)
+        else:
+            error_color = (0, 180, 0)
+        pos_limit_mm = pos_limit * 1000.0
+        pos_error_mm = pos_error * 1000.0
+        stop_label = " | STOP" if safety_stop else ""
+        cv2.putText(
+            out,
+            (
+                f"EE pos err={pos_error_norm * 1000.0:.1f}/{pos_limit_mm:.0f} mm"
+                f"{stop_label}"
+            ),
+            (12, 56),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.58,
+            error_color,
+            2,
+            cv2.LINE_AA,
+        )
+        cv2.putText(
+            out,
+            (
+                f"dx/dy/dz={pos_error_mm[0]:+.1f} {pos_error_mm[1]:+.1f} "
+                f"{pos_error_mm[2]:+.1f} mm | rot={rot_value:.3f}/{rot_limit:.3f} rad"
+            ),
+            (12, 82),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.50,
+            error_color,
+            2,
+            cv2.LINE_AA,
+        )
     cv2.putText(
         out,
         "space=start/stop  p=pause  h=home  backspace=cancel  q/esc=quit",
@@ -681,9 +748,6 @@ def main() -> None:
         stop_factor=args.loop_watchdog_stop_factor,
         enabled=not args.disable_loop_watchdog,
     )
-
-    SAFETY_POS_ERROR_STOP = 0.20
-    SAFETY_ROT_ERROR_STOP = 0.60
 
     try:
         robot.connect()
@@ -814,6 +878,8 @@ def main() -> None:
         print(f"touch rot meth : {args.touch_rot_method}")
         print(f"touch watchdog : {touch_watchdog.enabled}")
         print(f"touch timeout  : {touch_watchdog.timeout:.3f} s")
+        print(f"max pos error  : {args.max_pos_error_stop:.3f} m")
+        print(f"max rot error  : {args.max_rot_error_stop:.3f} rad")
         print(f"loop watchdog  : {loop_watchdog.enabled}")
         print(f"loop warn dt   : {loop_watchdog.warn_dt:.3f} s")
         print(f"loop stop dt   : {loop_watchdog.stop_dt:.3f} s")
@@ -982,6 +1048,16 @@ def main() -> None:
                 )
 
             if args.show_cameras and latest_frames is not None:
+                display_pos_error = None
+                display_rot_error_norm = None
+                if latched_target_pos is not None and latched_target_rot is not None:
+                    display_pos_error = latched_target_pos - current_tcp_pos
+                    display_rot_error_norm = float(
+                        np.linalg.norm(
+                            orientation_error(latched_target_rot, current_tcp_rot)
+                        )
+                    )
+
                 top_display = draw_camera_overlay(
                     latest_frames.top_display_bgr,
                     "top_down",
@@ -990,6 +1066,11 @@ def main() -> None:
                     reset_home_active,
                     len(recorder) if recorder is not None else 0,
                     saved_episodes,
+                    pos_error=display_pos_error,
+                    rot_error_norm=display_rot_error_norm,
+                    max_pos_error=args.max_pos_error_stop,
+                    max_rot_error=args.max_rot_error_stop,
+                    safety_stop=safety_stop_triggered,
                 )
                 wrist_display = draw_camera_overlay(
                     latest_frames.wrist_display_bgr,
@@ -999,6 +1080,11 @@ def main() -> None:
                     reset_home_active,
                     len(recorder) if recorder is not None else 0,
                     saved_episodes,
+                    pos_error=display_pos_error,
+                    rot_error_norm=display_rot_error_norm,
+                    max_pos_error=args.max_pos_error_stop,
+                    max_rot_error=args.max_rot_error_stop,
+                    safety_stop=safety_stop_triggered,
                 )
                 cv2.imshow("real top_down camera", top_display)
                 cv2.imshow("real wrist camera", wrist_display)
@@ -1187,7 +1273,10 @@ def main() -> None:
                 
                 safety_res = safety_checker.check_loop(qvel=qvel, qacc=qacc, J=J)
 
-                if pos_err_norm > SAFETY_POS_ERROR_STOP or rot_err_norm > SAFETY_ROT_ERROR_STOP:
+                if (
+                    pos_err_norm > args.max_pos_error_stop
+                    or rot_err_norm > args.max_rot_error_stop
+                ):
                     safety_stop_triggered = True
                     safety_stop_reason = (
                         f"touch/robot error too large: "

@@ -134,6 +134,18 @@ def main():
     parser.add_argument("--capture-height", type=int, default=480)
     parser.add_argument("--camera-fps", type=int, default=30)
     parser.add_argument("--max-display-width", type=int, default=1500)
+    parser.add_argument(
+        "--save-once",
+        type=str,
+        default=None,
+        help="Capture one comparison image, save it to this path, and exit.",
+    )
+    parser.add_argument(
+        "--warmup-frames",
+        type=int,
+        default=30,
+        help="Number of live frames to discard before a one-shot capture.",
+    )
     parser.add_argument("--no-advanced-config", action="store_true")
     parser.add_argument("--fake", action="store_true")
     args = parser.parse_args()
@@ -180,6 +192,27 @@ def main():
 
     cameras.start()
     try:
+        if args.save_once is not None:
+            live = None
+            for _ in range(max(1, args.warmup_frames)):
+                live = cameras.read()
+
+            global_idx = ep_start + frame
+            display = build_display(
+                top_data[global_idx],
+                wrist_data[global_idx],
+                live.top_rgb,
+                live.wrist_rgb,
+                f"episode={episode} frame={frame} global={global_idx}",
+                args.max_display_width,
+            )
+            output_path = Path(args.save_once).expanduser()
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            if not cv2.imwrite(str(output_path), display):
+                raise RuntimeError(f"Could not save comparison image: {output_path}")
+            print(f"[saved] {output_path}")
+            return
+
         while True:
             global_idx = ep_start + frame
             dataset_top = top_data[global_idx]

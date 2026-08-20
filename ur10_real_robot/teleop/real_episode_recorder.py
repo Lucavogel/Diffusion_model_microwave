@@ -11,7 +11,7 @@ class RealEpisodeRecorder:
         self.enabled = bool(enabled)
         self.record_freq = float(record_freq)
 
-        self.last_record_time = -1e9
+        self.next_record_time = -1e9
         self.is_recording = False
 
         self.current_episode_data = self._empty_episode()
@@ -33,7 +33,7 @@ class RealEpisodeRecorder:
             return
 
         self.current_episode_data = self._empty_episode()
-        self.last_record_time = -1e9
+        self.next_record_time = time.monotonic()
         self.is_recording = True
         print("\n=== Recording Started ===")
 
@@ -52,9 +52,10 @@ class RealEpisodeRecorder:
         self.is_recording = False
         print("\n=== Recording Stopped ===")
 
-    def should_record(self) -> bool:
-        now = time.monotonic()
-        return now - self.last_record_time >= (1.0 / self.record_freq)
+    def should_record(self, now: Optional[float] = None) -> bool:
+        if now is None:
+            now = time.monotonic()
+        return float(now) + 1e-9 >= self.next_record_time
 
     def has_data(self) -> bool:
         return len(self.current_episode_data["action"]) > 0
@@ -73,7 +74,8 @@ class RealEpisodeRecorder:
         if not self.enabled:
             return
 
-        if not self.is_recording or not self.should_record():
+        now = time.monotonic()
+        if not self.is_recording or not self.should_record(now):
             return
 
         if top_down_rgb is None:
@@ -147,7 +149,11 @@ class RealEpisodeRecorder:
             np.array([time.monotonic() if timestamp is None else float(timestamp)], dtype=np.float64)
         )
 
-        self.last_record_time = time.monotonic()
+        period = 1.0 / self.record_freq
+        self.next_record_time += period
+        if self.next_record_time <= now:
+            skipped_periods = int((now - self.next_record_time) // period) + 1
+            self.next_record_time += skipped_periods * period
 
     def to_numpy(self) -> Optional[Dict[str, np.ndarray]]:
         if not self.has_data():
