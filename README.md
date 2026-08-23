@@ -23,31 +23,28 @@ focus on extracting electronic components from a microwave-like workspace.
 
 ### MuJoCo Simulation
 
-[![MuJoCo microwave extraction demonstration](media/demos/simulation_microwave_extraction.jpg)](media/demos/simulation_microwave_extraction.mp4)
-
-[Watch the MuJoCo demonstration](media/demos/simulation_microwave_extraction.mp4)
+https://github.com/user-attachments/assets/5065d1bc-a97e-4889-a67c-71cdfe236247
 
 *Diffusion Policy executing a microwave disassembly task in MuJoCo: extracting
 two objects from the cavity and placing them into their respective sorting boxes.
 The target components are initialized with a lateral position randomization of
-approximately +/- 2 cm. The 26-second montage is shown at 2.4x playback speed.*
+approximately +/- 2 cm.*
 
 **Result:** 20/20 successful evaluation rollouts for both the U-Net and
 Transformer policies under the tested simulation randomization.
 
 ### Real Robot
 
-[![Real UR10 microwave extraction demonstration](media/demos/real_microwave_extraction.jpg)](media/demos/real_microwave_extraction.mp4)
-
-[Watch the real-robot demonstration](media/demos/real_microwave_extraction.mp4)
+https://github.com/user-attachments/assets/07e6fe3c-cc80-408b-ac51-6cc0935d3b6b
 
 *Diffusion Policy executing a microwave component extraction task on the physical
 UR10. The final policy handles limited variations in both the initial component
 position and orientation. It was trained from demonstrations collected directly
-on the physical setup through teleoperation. The montage is edited and
-accelerated for readability.*
+on the physical setup through teleoperation.*
 
 **Final benchmark result:** 18/20 successful real-robot trials.
+
+**Video note:** the real-robot video is shown at 3x playback speed.
 
 > The simulation and real-robot experiments use separate demonstration datasets.
 > The real-robot policy is trained from demonstrations collected directly on the
