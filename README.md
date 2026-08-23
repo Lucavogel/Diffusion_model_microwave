@@ -37,7 +37,10 @@ Transformer policies under the tested simulation randomization.
 
 https://github.com/user-attachments/assets/07e6fe3c-cc80-408b-ac51-6cc0935d3b6b
 
-Uploading microwave_real_montage.mp4…
+
+https://github.com/user-attachments/assets/038435c7-3bf3-449c-84a6-8ede18cb67ab
+
+
 
 *Diffusion Policy executing a microwave component extraction task on the physical
 UR10. The final policy handles limited variations in both the initial component
