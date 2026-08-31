@@ -1,0 +1,116 @@
+\section{Train and Select a Model on Shared Compute}
+\label{chap:training}
+
+Training should begin only after the dataset interface has been frozen and a
+small end-to-end smoke test has succeeded. The goal of the server workflow is
+not merely to obtain a checkpoint; it is to preserve enough information to
+reproduce how that checkpoint was produced.
+
+\subsection{Freeze one training configuration}
+
+Record the following before launching a long run:
+
+\begin{itemize}
+  \item dataset path and episode count;
+  \item observation keys, shapes, and preprocessing;
+  \item action representation and horizons;
+  \item model architecture and parameter count;
+  \item optimizer, learning rate, scheduler, batch size, and seed;
+  \item train/validation split by episode;
+  \item number of epochs and checkpoint interval;
+  \item software revision and training device.
+\end{itemize}
+
+For a new model, first train for only a few batches and load the resulting
+checkpoint in the policy runner. This verifies configuration composition,
+tensor shapes, normalization, and serialization before consuming hours of GPU
+time.
+
+\subsection{Keep execution contexts explicit}
+
+Distinguish the local experiment PC, server host, container, and Python
+environment. Many path and import errors come from running a correct command in
+the wrong context; for example, \filepath{/workspace} exists inside the project
+container, not on the local robot computer.
+
+\subsection{A general server workflow}
+
+\begin{enumerate}
+  \item Validate the dataset and record the source revision.
+  \item Transfer only the required source, configuration, and data.
+  \item Use a persistent session and a documented container/environment.
+  \item Print resolved paths and run a short smoke test.
+  \item Monitor the run and copy model candidates with their configurations
+  back to the deployment computer.
+\end{enumerate}
+
+Use a persistent container or a documented image. Installing arbitrary packages
+interactively until an import works makes the next run difficult to reproduce.
+
+\subsection{Example: LIRMM training setup}
+
+\begin{projectbox}[Internship example]
+Training ran on \filepath{mic-gpu1} inside a persistent Docker container using
+one NVIDIA A100 GPU. Data and configurations were transferred with
+\filepath{rsync}; \filepath{tmux} protected the run from SSH disconnection. An
+absolute dataset path was supplied explicitly, and the trained model was loaded
+on the local CPU before robot testing. Exact server and training commands are in
+\filepath{README_SERVER.md}.
+\end{projectbox}
+
+\subsection{What to monitor}
+
+Monitor several signals rather than one number:
+
+\begin{description}
+  \item[Training loss:] confirms that the optimizer can fit the demonstrations.
+  \item[Validation loss:] detects generalization degradation on held-out episodes.
+  \item[Action error or samples:] helps reveal one problematic action component.
+  \item[GPU use and step time:] reveals data-loader, memory, or device problems.
+  \item[Closed-loop rollouts:] measure the behavior that ultimately matters.
+\end{description}
+
+The first Zarr load may be slow because chunks are decompressed and cached. A
+pause after model construction is not proof that training has frozen; inspect
+CPU, disk, GPU, and process activity before interrupting it.
+
+\subsection{Select model candidates}
+
+Save model candidates often enough to observe overfitting. Validation loss may
+reach its minimum early, while closed-loop performance does not always rank
+candidates in exactly the same order.
+
+A sensible selection procedure is:
+
+\begin{enumerate}
+  \item reject runs with unstable or inconsistent training;
+  \item choose a small set around the best validation region;
+  \item benchmark inference time and load each checkpoint locally;
+  \item test candidates in simulation or a no-motion real stage;
+  \item choose one checkpoint before the reported evaluation trials.
+\end{enumerate}
+
+Do not change the selected model during the final evaluation. Development
+trials and evaluation trials have different roles.
+
+\subsection{Typical failures}
+
+\begin{longtable}{@{}p{0.29\textwidth}p{0.65\textwidth}@{}}
+  \toprule
+  \textbf{Symptom} & \textbf{First checks} \\
+  \midrule
+  \endhead
+  Dataset not found & Print the path inside the container; verify mount, transfer location, and Hydra-resolved value. \\
+  CUDA out of memory & Check other processes, selected GPU, batch size, workers, image resolution, and model size. \\
+  Training appears frozen & Inspect first-load caching, disk activity, workers, shared memory, and GPU utilization. \\
+  Loss becomes NaN & Check normalization, invalid actions, learning rate, mixed precision, and exploding gradients. \\
+  Validation rises early & Check split size, dataset diversity, augmentation, checkpoint frequency, and overfitting. \\
+  Checkpoint fails locally & Check source revision, policy class, preprocessing, dependency compatibility, and EMA loading. \\
+  \bottomrule
+\end{longtable}
+
+\begin{checkpointbox}[Training output]
+For every candidate checkpoint, keep the resolved configuration, dataset name,
+Git revision, epoch, validation metrics, parameter count, and a measured
+inference latency on the deployment computer.
+\end{checkpointbox}

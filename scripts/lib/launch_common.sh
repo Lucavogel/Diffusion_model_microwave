@@ -97,8 +97,11 @@ launch_source_ros2() {
   local setup="${ROS_SETUP:-/opt/ros/$distro/setup.bash}"
   [[ -f "$setup" ]] || launch_die \
     "ROS 2 setup was not found at $setup. Follow README_ENV.md."
+  # Temporarily disable -u to allow ROS 2 setup to use potentially unbound variables
+  set +u
   # shellcheck disable=SC1090
   source "$setup"
+  set -u
   command -v ros2 >/dev/null 2>&1 || launch_die \
     "ROS 2 did not become available after sourcing $setup."
 }
@@ -152,8 +155,11 @@ launch_prepare_touch_workspace() {
 
   [[ -f "$setup" ]] || launch_die \
     "Touch workspace is not built. Set TOUCH_BUILD=auto or follow README_ENV.md."
+  # Temporarily disable -u to allow ROS 2 setup to use potentially unbound variables
+  set +u
   # shellcheck disable=SC1090
   source "$setup"
+  set -u
   launch_add_openhaptics_runtime
   ros2 pkg prefix touch_ros2_driver >/dev/null 2>&1 || launch_die \
     "ROS 2 cannot find touch_ros2_driver after sourcing $setup."

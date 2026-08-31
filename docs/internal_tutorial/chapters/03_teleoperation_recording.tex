@@ -1,0 +1,195 @@
+\chapter{Teleoperation and Data Recording}
+\label{chap:touch}
+\label{chap:collection}
+
+Teleoperation is not only a convenient way to move the robot. It defines the
+behavior that the policy will imitate. Controller lag, inconsistent gripper
+commands, occlusion, and unnecessary corrective motions all become part of the
+training target.
+
+\section{A reusable teleoperation architecture}
+
+A practical teleoperation system separates device input, target generation,
+low-level control, and recording:
+
+\begin{center}
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+  node distance=7mm and 7mm,
+  box/.style={draw=lirmmblue,rounded corners=1mm,thick,align=center,
+              minimum height=10mm,minimum width=27mm,fill=softblue},
+  arr/.style={-{Latex[length=2.2mm]},thick,lirmmblue}
+]
+  \node[box] (device) {Operator\\device};
+  \node[box,right=of device] (ros) {ROS input\\messages};
+  \node[box,right=of ros] (target) {Desired pose\\and gripper};
+  \node[box,right=of target] (servo) {Robot-specific\\servo};
+  \node[box,right=of servo] (robot) {Simulation or\\physical robot};
+  \node[box,below=9mm of target] (record) {Synchronized\\recorder};
+  \draw[arr] (device) -- (ros);
+  \draw[arr] (ros) -- (target);
+  \draw[arr] (target) -- (servo);
+  \draw[arr] (servo) -- (robot);
+  \draw[arr] (robot.south) |- (record.east);
+  \draw[arr] (target.south) -- (record.north);
+\end{tikzpicture}%
+}
+\end{center}
+
+This separation makes the input device and learned-policy interface reusable.
+Only the servo and state reader must change for another robot.
+
+\begin{projectbox}[Implementation used during the internship]
+The 3D Systems Touch publishes pose and buttons through a ROS~2 C++ node. A
+Python listener converts incremental stylus motion into a Cartesian target.
+Pinocchio computes forward kinematics and the Jacobian
+\citep{carpentier2019pinocchio}. The same target logic feeds either MuJoCo or a
+UR10 \filepath{speedj} backend.
+\end{projectbox}
+
+\section{Use relative motion, not device coordinates}
+
+The physical coordinates of a desktop device generally have no useful absolute
+relationship with the robot base. Use differential motion:
+
+\begin{equation}
+  \Delta p_{robot} = s_p M_p
+  \left(p^{device}_{t}-p^{device}_{t-1}\right),
+\end{equation}
+
+where $M_p$ maps axes and $s_p$ sets workspace scale. The first valid device
+pose becomes a reference and produces no robot movement. This prevents the
+initial jump that would occur if the device pose were interpreted as an
+absolute robot target.
+
+Test one translation and one rotation axis at a time. If an axis is wrong,
+correct the mapping rather than teaching the operator to compensate mentally.
+
+\section{From target error to robot motion}
+
+For Cartesian velocity control, a common structure is:
+
+\begin{equation}
+  v_{des} =
+  \begin{bmatrix}K_p e_p & K_r e_r\end{bmatrix}^{T},
+  \qquad
+  \dot q = J^{\#}(q)v_{des},
+\end{equation}
+
+where $e_p$ and $e_r$ are pose errors and $J^{\#}$ is a damped pseudoinverse.
+Joint velocity and acceleration limits must be applied after this conversion.
+
+Target smoothing can reduce abrupt hand motion:
+
+\begin{equation}
+  x_f(t)=(1-\alpha)x_f(t-1)+\alpha x_{raw}(t).
+\end{equation}
+
+A large $\alpha$ is responsive but transmits more noise; a small $\alpha$ is
+smooth but introduces lag. Tune scale, target-speed limit, filter alpha, servo
+gain, and joint limit one at a time. Several different parameter combinations
+can produce similar slow motion while having very different behavior near
+contact.
+
+\section{Understand the timing chain}
+
+The device, controller, cameras, and recorder do not need the same frequency.
+For example, the internship setup approximately used:
+
+\begin{table}[H]
+  \centering
+  \caption{Typical rates in the real teleoperation pipeline.}
+  \begin{tabular}{@{}ll@{}}
+    \toprule
+    \textbf{Process} & \textbf{Reference rate} \\
+    \midrule
+    Touch ROS~2 publication & approximately 100 Hz \\
+    Robot control loop & 50 Hz \\
+    RealSense capture & 30 Hz \\
+    Demonstration recording & 10 Hz \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+The controller should consume the newest available target, while the recorder
+periodically samples a coherent observation-action pair. Queueing every old
+device message increases lag without adding useful information.
+
+\begin{methodbox}[Measure latency instead of guessing]
+Timestamp device input, camera capture, target generation, command transmission,
+and recorder write. Log dropped or stale frames. A slow response may come from
+the ROS path, camera blocking, controller filtering, disk compression, or the
+robot safety slider; increasing $K_p$ does not fix all of these causes.
+\end{methodbox}
+
+Useful improvements for a future implementation are:
+
+\begin{itemize}
+  \item use depth-one/latest-sample ROS QoS for interactive targets;
+  \item capture cameras continuously rather than starting a blocking read in
+  the servo loop;
+  \item move image compression and Zarr writes to a bounded background queue;
+  \item record timestamps and reject a sample when one camera is stale;
+  \item display control error, frame age, and saved-step count to the operator;
+  \item stop or invalidate the episode after a frozen camera rather than saving
+  apparently normal repeated images.
+\end{itemize}
+
+\section{Design the gripper command as part of the task}
+
+Continuous gripper measurements are not always good action labels. A physical
+gripper moves slowly and may report different intermediate widths for the same
+operator intention. If the task naturally uses semantic states, record the
+commanded state as the action and the measured width as an observation.
+
+In the internship dataset, the gripper action used three semantic states
+(open, narrow, and grasp). The narrowed state allowed entry into the cavity.
+The commanded state was stored in \filepath{action}, while measured opening was
+stored in \filepath{robot0_gripper_qpos}; this preserved operator intention and
+still exposed actuator delay.
+
+Use continuous commands when the task genuinely requires variable grasp width.
+Do not quantize only to hide inconsistent data; choose an action representation
+that matches the future task.
+
+\section{Collect demonstrations that teach observable corrections}
+
+A good demonstration is not simply a successful one. It should make the reason
+for each correction visible to the policy. Practical recommendations are:
+
+\begin{itemize}
+  \item practice the controller before recording;
+  \item begin and end episodes close to the useful task interval;
+  \item use a consistent phase order and start configuration;
+  \item avoid moving from information that is visible only to the human;
+  \item delay fine alignment until the relevant camera sees the object;
+  \item avoid passing the gripper in front of the object unnecessarily;
+  \item cancel failed, interrupted, or camera-corrupted demonstrations;
+  \item include deliberate coverage of the expected pose range.
+\end{itemize}
+
+In the constrained-extraction experiments, early demonstrations sometimes
+began orientation corrections before the wrist camera clearly saw the component. Later
+demonstrations approached first, waited for a useful wrist view, and then
+aligned. This made the observation-action relationship easier to learn.
+
+\section{Launch through maintained wrappers}
+
+The repository uses \filepath{launch_all.sh} for simulation and
+\filepath{ur10_real_robot/run_teleop.sh} for physical collection. The complete
+commands and controls are maintained in \filepath{README_CODE.md}. On another
+platform, replace the robot adapter and limits while preserving the staged
+pre-flight, recording, and dataset checks.
+
+\begin{safetybox}[Physical teleoperation]
+An operator must be trained on the platform, the speed slider must begin low,
+the workspace must be clear, and an emergency stop must remain reachable. Test
+each mapped axis with millimetric motions before combining directions or
+recording data.
+\end{safetybox}
+
+\begin{checkpointbox}[Before a long collection]
+Record three episodes, replay every frame, plot the trajectory, and verify the
+gripper labels. Continue only if the motion is responsive enough for small
+corrections and the saved data represents what the operator intended.
+\end{checkpointbox}

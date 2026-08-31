@@ -1,0 +1,163 @@
+\chapter{From Data to a Trained Model}
+\label{chap:data}
+
+The dataset is the contract between teleoperation, training, and deployment.
+Most difficult bugs in this transition are not neural-network bugs; they are
+differences in key names, image order, normalization, coordinates, quaternion
+convention, timing, or action semantics.
+
+\section{Define one synchronized sample}
+
+A visuomotor sample normally contains:
+
+\begin{equation}
+  \left(o_t, a_t\right)
+  = \left(\text{images}_t,\text{robot state}_t,
+  \text{demonstrated command}_t\right).
+\end{equation}
+
+An episode is an ordered sequence of these samples from one task attempt. Do
+not concatenate unrelated attempts without episode boundaries; training windows
+must not cross from the end of one trial into the start of another.
+
+The recorder should define which timestamp each field represents. For a slow
+10 Hz dataset, a camera frame that is several hundred milliseconds older than
+the action may already create a misleading label near contact.
+
+\section{Define and document the schema}
+
+The exact keys are project-specific. For example, the internship recorder
+stored the following Zarr arrays at 10 Hz:
+
+\begin{table}[H]
+  \centering
+  \caption{Real dataset interface used during the internship.}
+  \begin{tabularx}{\textwidth}{@{}p{0.34\textwidth}p{0.20\textwidth}X@{}}
+    \toprule
+    \textbf{Key} & \textbf{Per-step shape} & \textbf{Meaning} \\
+    \midrule
+    \filepath{agentview_image} & $240\times320\times3$ & Global RGB image. \\
+    \filepath{robot0_eye_in_hand_image} & $240\times320\times3$ & Wrist RGB image. \\
+    \filepath{robot0_eef_pos} & 3 & Measured end-effector position. \\
+    \filepath{robot0_eef_quat} & 4 & Measured end-effector quaternion. \\
+    \filepath{robot0_gripper_qpos} & 1 & Measured gripper opening/state. \\
+    \filepath{action} & 8 & Target pose and gripper command. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+The real action was
+
+\begin{equation}
+  a_t=[x,y,z,q_w,q_x,q_y,q_z,g].
+\end{equation}
+
+Dimension alone is insufficient compatibility evidence: coordinate frames,
+units, quaternion order, and action meaning must also match.
+
+\section{Choose state and action according to causality}
+
+The observation should describe what was measured before the command. The
+action should describe what the demonstrator intended the robot to do next.
+This distinction is important for slow actuators:
+
+\begin{itemize}
+  \item measured gripper width belongs in the observation;
+  \item commanded open/narrow/grasp state belongs in the action;
+  \item delayed measured motion should not replace the intended command label.
+\end{itemize}
+
+Apply the same reasoning to target pose versus measured pose. If the action is a
+Cartesian target, record that target consistently during collection and decode
+it the same way during execution.
+
+\section{Temporal windows and horizons}
+
+Sequence policies use several time scales:
+
+\begin{description}
+  \item[Observation horizon $T_o$:] recent samples supplied as context.
+  \item[Prediction horizon $T_p$:] complete future sequence predicted by the model.
+  \item[Action horizon $T_a$:] prefix executed before replanning.
+\end{description}
+
+For a sequence policy, predicting farther than execution can encourage a
+coherent future while replanning limits the use of increasingly old
+predictions. Record all three horizons with the model configuration.
+
+These horizons are part of the model interface. Changing them may require a new
+configuration or checkpoint rather than only a command-line flag.
+
+\section{Inspect structure, content, and coverage}
+
+Dataset validation should occur in three passes.
+
+\subsection{Structural checks}
+
+Confirm episode count, array lengths, dtypes, action dimension, image shapes,
+and absence of incomplete chunks. In this repository:
+
+\begin{lstlisting}[language=bash]
+python scripts/check_zarr.py data/datasets/<dataset>.zarr
+\end{lstlisting}
+
+\subsection{Visual and trajectory replay}
+
+Replay every episode, not only random images:
+
+\begin{lstlisting}[language=bash]
+python scripts/replay_zarr.py data/datasets/<dataset>.zarr --scale 2
+python scripts/traj_zarr.py data/datasets/<dataset>.zarr
+\end{lstlisting}
+
+Look for frozen cameras, repeated frames, occlusion at the decision point,
+sudden action jumps, long idle segments, wrong gripper transitions, and recovery
+motions that are not intended behavior.
+
+\subsection{Coverage checks}
+
+A collection can contain only good demonstrations and still be a poor dataset.
+Plot or tabulate initial position, orientation, task zone, object identity, and
+lighting condition. The distribution should cover the evaluation protocol
+rather than accidentally overrepresenting the easiest location.
+
+\begin{methodbox}[Use data inspection to redesign collection]
+When a policy repeatedly misses one region, first check whether that region is
+visible and sufficiently represented. Additional targeted demonstrations may
+be more useful than changing architecture or training for more epochs.
+\end{methodbox}
+
+\section{Compare deployment observations with training data}
+
+Before executing a trained model after the setup has moved, compare live camera
+images with recorded images. This repository provides:
+
+\begin{lstlisting}[language=bash]
+PYTHONPATH=. python scripts/compare_live_camera_to_zarr.py \
+  data/datasets/<dataset>.zarr \
+  --wrist-camera-config <matching_camera_config.json>
+\end{lstlisting}
+
+The views do not need to be pixel-identical, but camera geometry, crop,
+workspace position, and illumination should be close. A moved table or camera
+can create a larger distribution shift than a change in neural-network loss.
+
+\section{Training, validation, and evaluation data}
+
+Split by complete episodes, never by individual frames. Adjacent frames from
+one trajectory are highly correlated; placing some in training and some in
+validation gives an overly optimistic metric.
+
+Validation loss is useful for detecting optimization problems and overfitting,
+but it does not directly measure closed-loop recovery. Select final candidates
+using held-out metrics and controlled rollouts, then freeze one model before
+the reported evaluation.
+
+\section{Acceptance checklist before training}
+
+\begin{checkpointbox}[Interface freeze]
+Confirm shapes and episode boundaries, replay every accepted episode, document
+camera and coordinate conventions, verify action semantics and coverage, then
+point the task configuration to this exact dataset. Keep one interface table for
+both training and deployment.
+\end{checkpointbox}

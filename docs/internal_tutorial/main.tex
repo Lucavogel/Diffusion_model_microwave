@@ -1,0 +1,178 @@
+\documentclass[11pt,a4paper,openany]{book}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage[a4paper,margin=2.35cm,headheight=15pt]{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{amsmath,amssymb,mathtools}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,fit,calc,shapes.geometric}
+\usepackage[most]{tcolorbox}
+\usepackage{listings}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{float}
+\usepackage[section]{placeins}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{natbib}
+\usepackage{hyperref}
+\usepackage[nameinlink,noabbrev]{cleveref}
+
+\definecolor{lirmmblue}{HTML}{1E5A8A}
+\definecolor{safeorange}{HTML}{A84B00}
+\definecolor{dangerred}{HTML}{9D1B1B}
+\definecolor{softblue}{HTML}{EEF5FA}
+\definecolor{softgreen}{HTML}{EEF8F1}
+\definecolor{softorange}{HTML}{FFF4E8}
+\definecolor{softred}{HTML}{FCEEEE}
+\definecolor{codegray}{HTML}{F5F6F7}
+\definecolor{terminalgreen}{HTML}{1C6B3A}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=lirmmblue,
+  citecolor=lirmmblue,
+  urlcolor=lirmmblue,
+  pdftitle={Practical Workflow for Testing Visuomotor Robot Learning Systems},
+  pdfauthor={Luca Vogelgesang, LIRMM DEXTER}
+}
+
+\setcounter{tocdepth}{0}
+\setcounter{secnumdepth}{2}
+\setlist[itemize,enumerate]{nosep,leftmargin=*}
+\setlist[description]{nosep}
+\renewcommand{\arraystretch}{1.15}
+\graphicspath{{figures/}}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[LE,RO]{\small\thepage}
+\fancyhead[LO]{\small\nouppercase{\rightmark}}
+\fancyhead[RE]{\small\nouppercase{\leftmark}}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\titleformat{\chapter}[display]
+  {\normalfont\bfseries\color{lirmmblue}}
+  {\filleft\Large\chaptername\ \thechapter}
+  {0.7ex}
+  {\titlerule\vspace{1ex}\Huge}
+
+\lstdefinestyle{projectcode}{
+  backgroundcolor=\color{codegray},
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  breakatwhitespace=false,
+  columns=fullflexible,
+  frame=single,
+  rulecolor=\color{black!20},
+  showstringspaces=false,
+  keepspaces=true,
+  tabsize=2,
+  upquote=true,
+  aboveskip=0.8em,
+  belowskip=0.8em
+}
+\lstset{style=projectcode}
+\lstdefinelanguage{XML}{
+  morestring=[b]",
+  morecomment=[s]{<!--}{-->},
+  morekeywords={body,freejoint,geom,camera,include,worldbody,asset,mesh,
+                actuator,joint,site,light,option,equality,default},
+  sensitive=true
+}
+
+\newtcolorbox{beginnerbox}[1][Beginner note]{
+  enhanced,breakable,
+  colback=softblue,colframe=lirmmblue,
+  title=\textbf{#1},fonttitle=\bfseries,
+  boxrule=0.7pt,arc=1mm,left=2mm,right=2mm,top=1mm,bottom=1mm
+}
+\newtcolorbox{methodbox}[1][Method]{
+  enhanced,breakable,
+  colback=softblue,colframe=lirmmblue,
+  title=\textbf{#1},fonttitle=\bfseries,
+  boxrule=0.7pt,arc=1mm,left=2mm,right=2mm,top=1mm,bottom=1mm
+}
+\newtcolorbox{projectbox}[1][Example from this internship]{
+  enhanced,breakable,
+  colback=softgreen,colframe=terminalgreen,
+  title=\textbf{#1},fonttitle=\bfseries,
+  boxrule=0.7pt,arc=1mm,left=2mm,right=2mm,top=1mm,bottom=1mm
+}
+\newtcolorbox{safetybox}[1][Safety-critical]{
+  enhanced,breakable,
+  colback=softred,colframe=dangerred,
+  title=\textbf{#1},fonttitle=\bfseries,
+  boxrule=1pt,arc=1mm,left=2mm,right=2mm,top=1mm,bottom=1mm
+}
+\newtcolorbox{checkpointbox}[1][Checkpoint]{
+  enhanced,breakable,
+  colback=softgreen,colframe=terminalgreen,
+  title=\textbf{#1},fonttitle=\bfseries,
+  boxrule=0.7pt,arc=1mm,left=2mm,right=2mm,top=1mm,bottom=1mm
+}
+\newtcolorbox{warningbox}[1][Important]{
+  enhanced,breakable,
+  colback=softorange,colframe=safeorange,
+  title=\textbf{#1},fonttitle=\bfseries,
+  boxrule=0.7pt,arc=1mm,left=2mm,right=2mm,top=1mm,bottom=1mm
+}
+
+\newcommand{\filepath}[1]{\nolinkurl{#1}}
+\newcommand{\term}[1]{\textbf{#1}}
+\newcommand{\localpc}{\textbf{Local robot PC}}
+\newcommand{\serverhost}{\textbf{GPU server host}}
+\newcommand{\dockerctx}{\textbf{Inside Docker}}
+\newcommand{\repo}{\filepath{Diffusion-model-isaacsim}}
+
+\begin{document}
+
+\frontmatter
+\begin{titlepage}
+  \centering
+  \includegraphics[width=0.28\textwidth]{logo_lirmm.jpeg}\par
+  \vspace{1.5cm}
+  {\Huge\bfseries\color{lirmmblue} Practical Workflow for Testing Visuomotor Robot Learning Systems\par}
+  \vspace{0.5cm}
+  {\LARGE From MuJoCo Prototyping to Physical Deployment\par}
+  \vspace{1.2cm}
+  {\large Technical handover for the LIRMM DEXTER team\par}
+  \vfill
+  \begin{tabular}{rl}
+    Prepared from: & the internship implementation by Luca Vogelgesang \\
+    Scientific supervision: & Chao Liu \\
+    Team: & LIRMM DEXTER \\
+    Version: & 1.2 \\
+    Date: & 31 August 2026
+  \end{tabular}
+\end{titlepage}
+
+\tableofcontents
+
+\mainmatter
+\input{chapters/01_methodology}
+\input{chapters/02_mujoco_setup}
+\input{chapters/03_teleoperation_recording}
+\input{chapters/04_dataset_interface}
+\input{chapters/05_training_server}
+\input{chapters/06_deployment}
+\input{chapters/07_evaluation_iteration}
+
+\appendix
+\input{appendices/A_openhaptics_install}
+
+\backmatter
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

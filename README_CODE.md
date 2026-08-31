@@ -106,7 +106,7 @@ The main entry points are:
 
 Start from these launchers before reading lower-level modules. Files named
 `demo_*`, old experiment scripts, and `Readme2` contain development history and
-are not the canonical beginner workflow.
+are not part of the maintained workflow.
 
 ## 4. What Is Stored in a Dataset
 

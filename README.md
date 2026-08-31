@@ -67,17 +67,17 @@ scripts/           Dataset inspection, replay, plotting, and benchmark utilities
 ur10_real_robot/   Real UR10 teleoperation, cameras, gripper, and policy execution
 ```
 
-## Internal Beginner Tutorial
+## Internal Technical Handover
 
 New interns should start with the complete internal handover manual:
 
 - [Read the compiled tutorial](docs/internal_tutorial/main.pdf)
 - [Open the modular LaTeX sources and build instructions](docs/internal_tutorial/README.md)
 
-It introduces the AI and Diffusion Policy concepts before covering the MuJoCo
-environment, Touch/OpenHaptics integration, demonstration collection, dataset
-validation, GPU-server training, staged UR10 deployment, safety, and experiment
-reporting.
+It presents a model-independent workflow for benchmark definition, MuJoCo
+validation, teleoperation, dataset collection, shared-server training, staged
+robot deployment, safety, and evaluation. Appendix A contains the complete
+Touch/OpenHaptics installation.
 
 ## Installation
 

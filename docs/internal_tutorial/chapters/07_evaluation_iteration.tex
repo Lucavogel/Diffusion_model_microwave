@@ -1,0 +1,121 @@
+\chapter{Evaluation, Diagnosis, and Iteration}
+\label{chap:evaluation}
+
+Evaluation should answer a defined question about one frozen system. It should
+not be mixed with checkpoint selection, gain tuning, or collection of new
+demonstrations.
+
+\section{Freeze the protocol}
+
+Before reported trials, fix:
+
+\begin{itemize}
+  \item checkpoint and policy configuration;
+  \item deployment command and safety limits;
+  \item robot start state and gripper opening;
+  \item camera placement, crop, and lighting;
+  \item object/target distribution;
+  \item trial success and failure rules;
+  \item maximum time and permitted human intervention.
+\end{itemize}
+
+Development trials used to select these choices are excluded from the final
+results. If a parameter changes, start a new evaluation block.
+
+\section{Choose metrics that reveal task structure}
+
+Task success is necessary but often insufficient. Divide the task into phases,
+for example approach, alignment, grasp, extraction, transport, and release.
+Record where the first unrecovered failure occurs, whether a re-grasp was
+needed, whether contact occurred, and whether a safety stop triggered.
+
+A 20-trial evaluation is useful for a preliminary engineering comparison, but
+it does not establish broad robustness or a precise success probability.
+Preserve individual trial records so later work can pool or stratify evidence.
+
+\begin{projectbox}[Internship example]
+Evaluation difficulty was increased from a simple physical pick-and-drop task
+to constrained extraction with position and orientation variation. Each stage
+used a newly frozen dataset/model pair, so the results measured feasibility at
+that stage rather than zero-shot transfer of one unchanged policy.
+\end{projectbox}
+
+\section{Diagnose the layer that failed}
+
+Classify evidence before changing the model:
+
+\begin{longtable}{@{}p{0.24\textwidth}p{0.70\textwidth}@{}}
+  \toprule
+  \textbf{Layer} & \textbf{Typical evidence and next check} \\
+  \midrule
+  \endhead
+  Perception & Failure depends on lighting, occlusion, crop, or region; replay the exact policy images and compare coverage. \\
+  Demonstration & Unnecessary corrections or inconsistent grasp timing appear in training episodes; curate or recollect targeted data. \\
+  Model/training & Open-loop predictions are unstable across held-out episodes or seeds; inspect normalization, capacity, loss, and overfitting. \\
+  Timing & Behavior degrades with speed or asynchronous delay; measure observation age and plan-switch discontinuity. \\
+  Controller & Targets are reasonable but tracking overshoots or lags; inspect frames, gains, limits, and kinematics. \\
+  Gripper/contact & Arm motion is correct but measured width or grasp differs; inspect command semantics, actuator delay, force, and collision. \\
+  Hardware/sensor & Frames freeze or connections fail; repair the acquisition path before evaluating the policy. \\
+  \bottomrule
+\end{longtable}
+
+\begin{methodbox}[Prefer the smallest informative experiment]
+If one zone fails, compare that zone with another while freezing checkpoint,
+lighting, and speed. If asynchronous execution is suspected, compare sync and
+async at the same pose. A controlled pair of trials can be more informative
+than immediately collecting another 50 demonstrations.
+\end{methodbox}
+
+\section{Improve data with human intervention}
+
+When the policy fails in a reproducible state, a human can demonstrate the
+missing correction and add it to a new dataset version. This is more targeted
+than recollecting the entire task, but new data must be balanced so that the
+policy does not forget common successful behavior. Human-in-the-loop and
+intervention-based approaches formalize this idea
+\citep{mandlekar2020hitl,ross2011dagger}.
+
+Keep dataset versions immutable. Create a new version that records which
+episodes were added, why they were added, and which evaluation failure motivated
+them.
+
+\section{Starting a new model or robot}
+
+For a new policy architecture, preserve the dataset and evaluation protocol
+first. Verify that the model accepts the same interface and compare parameter
+count, training stability, inference latency, and task success. Architecture
+comparison is not meaningful if observations, action horizon, or evaluation
+conditions also change.
+
+For a new robot, preserve the high-level benchmark but revalidate:
+
+\begin{itemize}
+  \item kinematic reachability and tool frame;
+  \item camera geometry and occlusion;
+  \item action/controller interface and timing;
+  \item gripper semantics and force capability;
+  \item workspace and safety limits;
+  \item whether old demonstrations remain physically meaningful.
+\end{itemize}
+
+The most reusable artifacts are the benchmark definition, data schema, replay
+tools, evaluation sheet, and staged deployment method. Robot-specific gains and
+network addresses are not reusable scientific conclusions.
+
+\section{Minimal handover record}
+
+At the end of one experiment, leave:
+
+\begin{enumerate}
+  \item a short task protocol;
+  \item dataset path, episode count, and quality notes;
+  \item resolved training configuration and source revision;
+  \item selected checkpoint and measured inference latency;
+  \item exact deployment command;
+  \item trial-level evaluation table and representative videos;
+  \item known failure cases and the next controlled experiment.
+\end{enumerate}
+
+This is enough for another student to understand what was tested, reproduce the
+main result, and continue the investigation without repeating the full
+development history.

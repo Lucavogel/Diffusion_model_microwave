@@ -1,0 +1,238 @@
+\chapter{Touch and OpenHaptics Installation}
+\label{app:openhaptics}
+
+\begingroup
+\small
+\lstset{
+  basicstyle=\ttfamily\footnotesize,
+  aboveskip=0.4em,
+  belowskip=0.4em
+}
+
+This appendix gives the complete device-specific installation used for the
+3D Systems Touch. The validated stack is Ubuntu 22.04, ROS~2 Humble,
+OpenHaptics 3.4, and Touch Driver 2025.12.10. Install the general local
+environment from \filepath{README_ENV.md} first. Keep the Touch disconnected
+until the driver installation is complete.
+
+\section{Download and extract the vendor packages}
+
+Download both Linux archives from the official 3D Systems support page:
+
+\begin{center}
+\url{https://support.3dsystems.com/s/article/OpenHaptics-for-Linux-Developer-Edition-v34?language=en_US}
+\end{center}
+
+\begin{itemize}
+  \item \textbf{OpenHaptics Installer --- OpenHaptics for Linux v3.4};
+  \item \textbf{Haptic Device Driver Installer --- Touch Device Driver
+  v2025.12.10}.
+\end{itemize}
+
+Create a permanent working directory and extract both archives. The browser may
+append a suffix such as \filepath{(1)} to a repeated download; adapt the archive
+name when necessary.
+
+\begin{lstlisting}[language=bash]
+mkdir -p "$HOME/touch_driver"
+
+tar -xzf "$HOME/Downloads/openhaptics_3.4-0-developer-edition-amd64.tar.gz" \
+  -C "$HOME/touch_driver"
+tar -xzf "$HOME/Downloads/TouchDriver_2025_12_10+1.tgz" \
+  -C "$HOME/touch_driver"
+
+ls "$HOME/touch_driver/TouchDriver_2025_12_10"
+ls "$HOME/touch_driver/openhaptics_3.4-0-developer-edition-amd64"
+\end{lstlisting}
+
+Do not place these vendor archives inside the Git repository.
+
+\section{Install dependencies and vendor software}
+
+Install the build, terminal, and OpenGL dependencies required by the SDK and
+its examples:
+
+\begin{lstlisting}[language=bash]
+sudo apt update
+sudo apt install -y \
+  build-essential freeglut3-dev libglu1-mesa-dev \
+  libncurses5-dev mesa-utils
+\end{lstlisting}
+
+Install the Touch driver first. This copies the device libraries and installs
+the USB permission rule:
+
+\begin{lstlisting}[language=bash]
+cd "$HOME/touch_driver/TouchDriver_2025_12_10"
+sudo bash ./install_haptic_driver
+sudo udevadm control --reload-rules
+sudo udevadm trigger
+\end{lstlisting}
+
+Reconnect the Touch after this command. Reboot if requested. Then install the
+OpenHaptics SDK:
+
+\begin{lstlisting}[language=bash]
+cd "$HOME/touch_driver/openhaptics_3.4-0-developer-edition-amd64"
+sudo ./install
+sudo ldconfig
+\end{lstlisting}
+
+The SDK installer places examples and documentation under
+\filepath{/opt/OpenHaptics/Developer/3.4-0/}. The project also keeps the
+extracted SDK root so that CMake can locate the exact headers and libraries.
+
+\section{Configure the SDK path}
+
+Define \filepath{OPENHAPTICS_ROOT} and verify the two files required by the
+project build:
+
+\begin{lstlisting}[language=bash]
+export OPENHAPTICS_ROOT="$HOME/touch_driver/openhaptics_3.4-0-developer-edition-amd64"
+
+test -f "$OPENHAPTICS_ROOT/usr/include/HD/hd.h" \
+  && echo "OpenHaptics headers found"
+test -f "$OPENHAPTICS_ROOT/usr/lib/libHD.so" \
+  && echo "OpenHaptics HD library found"
+\end{lstlisting}
+
+Both messages must appear. Make the setting persistent for Bash terminals:
+
+\begin{lstlisting}[language=bash]
+echo 'export OPENHAPTICS_ROOT="$HOME/touch_driver/openhaptics_3.4-0-developer-edition-amd64"' \
+  >> "$HOME/.bashrc"
+source "$HOME/.bashrc"
+\end{lstlisting}
+
+For Zsh, add the same export line to \filepath{\textasciitilde/.zshrc} instead.
+
+Some vendor executables may report missing legacy terminal libraries such as
+\texttt{libtinfo.so.5} or \texttt{libncurses.so.5}. Install them only when that
+error occurs:
+
+\begin{lstlisting}[language=bash]
+sudo apt install -y libtinfo5 libncurses5
+\end{lstlisting}
+
+\section{Validate the device before ROS}
+
+Plug in the Touch. First compile and run the read-only vendor diagnostic:
+
+\begin{lstlisting}[language=bash]
+cd "$OPENHAPTICS_ROOT/opt/OpenHaptics/Developer/3.4-0/examples/HD/console/QueryDevice"
+make
+./QueryDevice
+\end{lstlisting}
+
+The program must identify the device, and the displayed pose and button values
+must change when the stylus moves. If initialization fails, stop here and fix
+the driver, USB connection, permissions, or missing library before using ROS.
+
+Run the calibration example when the device requests calibration:
+
+\begin{lstlisting}[language=bash]
+cd "$OPENHAPTICS_ROOT/opt/OpenHaptics/Developer/3.4-0/examples/HD/console/Calibration"
+make
+./Calibration
+\end{lstlisting}
+
+Finally, an optional force-feedback test verifies bidirectional communication:
+
+\begin{lstlisting}[language=bash]
+cd "$OPENHAPTICS_ROOT/opt/OpenHaptics/Developer/3.4-0/examples/HD/console/FrictionlessSphere"
+make
+./FrictionlessSphere
+\end{lstlisting}
+
+Move the stylus gently; a virtual sphere should be perceptible. Keep a light
+grip and stop immediately with \filepath{Ctrl+C} if the device behaves
+unexpectedly.
+
+\section{Build the project ROS~2 driver}
+
+Activate Conda, ROS~2, and the SDK path before building the workspace:
+
+\begin{lstlisting}[language=bash]
+cd "$HOME/Stage_Lirmm/Diffusion-model-isaacsim"
+conda activate microwave_dp
+source /opt/ros/humble/setup.bash
+export OPENHAPTICS_ROOT="$HOME/touch_driver/openhaptics_3.4-0-developer-edition-amd64"
+
+cd ros2_WS
+rosdep install --from-paths src --ignore-src -r -y
+colcon build --symlink-install \
+  --cmake-args -DOPENHAPTICS_ROOT="$OPENHAPTICS_ROOT"
+source install/setup.bash
+\end{lstlisting}
+
+If the workspace was copied from another computer, old absolute paths may
+remain in generated files. Remove only the generated directories and rebuild:
+
+\begin{lstlisting}[language=bash]
+cd "$HOME/Stage_Lirmm/Diffusion-model-isaacsim/ros2_WS"
+rm -rf build install log
+colcon build --symlink-install \
+  --cmake-args -DOPENHAPTICS_ROOT="$OPENHAPTICS_ROOT"
+source install/setup.bash
+\end{lstlisting}
+
+\section{Validate the ROS topics}
+
+Start the Touch node in terminal 1:
+
+\begin{lstlisting}[language=bash]
+cd "$HOME/Stage_Lirmm/Diffusion-model-isaacsim"
+conda activate microwave_dp
+source /opt/ros/humble/setup.bash
+source ros2_WS/install/setup.bash
+ros2 launch touch_ros2_driver touch_rviz.launch.py
+\end{lstlisting}
+
+Inspect its outputs in terminal 2:
+
+\begin{lstlisting}[language=bash]
+source /opt/ros/humble/setup.bash
+source "$HOME/Stage_Lirmm/Diffusion-model-isaacsim/ros2_WS/install/setup.bash"
+ros2 topic hz /touch/pose
+ros2 topic echo /touch/buttons
+\end{lstlisting}
+
+The pose must update continuously and both buttons must change the published
+value. Stop both terminals with \filepath{Ctrl+C}. Do not continue to MuJoCo or
+a physical robot if the topic freezes, the axes jump while the device is still,
+or the node reports an OpenHaptics scheduler error.
+
+\section{Daily use and common failures}
+
+In every new terminal used with the Touch, activate the three software layers:
+
+\begin{lstlisting}[language=bash]
+cd "$HOME/Stage_Lirmm/Diffusion-model-isaacsim"
+conda activate microwave_dp
+source /opt/ros/humble/setup.bash
+source ros2_WS/install/setup.bash
+\end{lstlisting}
+
+\begin{tabularx}{0.96\linewidth}{@{}>{\raggedright\arraybackslash}p{0.26\linewidth}>{\raggedright\arraybackslash}X@{}}
+  \toprule
+  \textbf{Symptom} & \textbf{Check} \\
+  \midrule
+  Device not detected & Reconnect USB, reload the udev rules, reboot, and run
+  \filepath{QueryDevice} before ROS. \\
+  Missing legacy terminal library & Install the two compatibility packages
+  shown above. \\
+  CMake cannot find \filepath{HD/hd.h} & Correct
+  \filepath{OPENHAPTICS_ROOT}, then delete only \filepath{ros2_WS/build},
+  \filepath{install}, and \filepath{log} before rebuilding. \\
+  Scheduler or device-in-use error & Close other OpenHaptics examples and ROS
+  nodes; only one process should own the device. \\
+  ROS topics are absent & Source ROS~2 and \filepath{ros2_WS/install/setup.bash},
+  then inspect the first terminal for a driver error. \\
+  \bottomrule
+\end{tabularx}
+
+Only after the vendor diagnostics and ROS topics pass should the Touch be linked
+to simulation or robot teleoperation. Physical robot motion still requires the
+staged safety procedure in \cref{chap:touch}.
+
+\endgroup
