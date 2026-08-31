@@ -1,24 +1,30 @@
 #!/usr/bin/env python3
+"""Teleoperate the microwave MuJoCo scene and record Zarr demonstrations.
+
+The 3D Systems Touch input is received from ROS 2 on ``/touch/pose``. Start this
+module through ``./launch_all.sh`` so the environment and Touch node are checked
+before the simulator opens.
+"""
+
 from __future__ import annotations
 
 from pathlib import Path
 import threading
 import time
 import sys
-import os
 
-sys.path.append(
-    os.path.abspath(
-        os.path.join(os.path.dirname(__file__), "../../diffusion_policy")
-    )
-)
+ROOT_DIR = Path(__file__).resolve().parents[2]
+for source_root in (ROOT_DIR, ROOT_DIR / "diffusion_policy"):
+    source_path = str(source_root)
+    if source_path not in sys.path:
+        sys.path.insert(0, source_path)
 
 try:
     from diffusion_policy.common.replay_buffer import ReplayBuffer
 except ImportError:
     print(
-        "Avertissement : Le module ReplayBuffer n'est pas trouvé. "
-        "Assurez-vous d'avoir zarr installé dans votre environnement conda/venv."
+        "[WARN] ReplayBuffer could not be imported. Dataset recording requires "
+        "the local diffusion_policy package and Zarr environment."
     )
     ReplayBuffer = None
 
@@ -40,14 +46,19 @@ from dp_mujoco.utils.safety_config import SafetyChecker, SafetyConfig
 from dp_mujoco.policy_exec.servo_controller_pinocchio import PinocchioServoController
 
 
-MODEL_PATH = Path(
-    "/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/"
-    "dp_mujoco/models/universal_robots_ur10e/scene_microwave_camera.xml"
+MODEL_PATH = (
+    ROOT_DIR
+    / "dp_mujoco"
+    / "models"
+    / "universal_robots_ur10e"
+    / "scene_microwave_camera.xml"
 )
-
-URDF_PATH = (
-    "/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/"
-    "dp_mujoco/models/universal_robots_ur10e/ur10_d455_support_rg2ft_fixed_gripper.urdf"
+URDF_PATH = str(
+    ROOT_DIR
+    / "dp_mujoco"
+    / "models"
+    / "universal_robots_ur10e"
+    / "ur10_d455_support_rg2ft_fixed_gripper.urdf"
 )
 
 
@@ -101,6 +112,13 @@ def hard_reset_robot(
 
 
 def main() -> None:
+    for required_path in (MODEL_PATH, Path(URDF_PATH)):
+        if not required_path.is_file():
+            raise FileNotFoundError(
+                f"Required robot model file not found: {required_path}. "
+                "Check that the repository and its model assets were cloned completely."
+            )
+
     rclpy.init()
 
     ros_node = TeleopTargetListener()
@@ -547,9 +565,11 @@ def main() -> None:
                                         if replay_buffer is None:
                                             if dataset_path is None:
                                                 timestamp = time.strftime("%Y%m%d_%H%M%S")
-                                                dataset_path = (
-                                                    "/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/"
-                                                    f"data/datasets/demo_data_{timestamp}.zarr"
+                                                dataset_path = str(
+                                                    ROOT_DIR
+                                                    / "data"
+                                                    / "datasets"
+                                                    / f"demo_data_{timestamp}.zarr"
                                                 )
                                                 print(f"Dataset cree: {dataset_path}")
                                             else:

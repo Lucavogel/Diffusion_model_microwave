@@ -1,67 +1,43 @@
 # Real Diffusion Policy Execution
 
-This folder contains the real-robot equivalent of `dp_mujoco/policy_exec`.
-
-The safe test order is:
-
-1. Fake robot + fake cameras, no real hardware:
-
-```bash
-/home/luca/venvs/mujoco_ros/bin/python \
-  -m ur10_real_robot.policy_exec.run_diffusion_real \
-  --checkpoint data/checkpoints/u_net_small_moredata.ckpt \
-  --backend fake \
-  --camera-mode fake \
-  --max-run-time 10 \
-  --debug-timing
-```
-
-2. Real robot connection, no motion, fake cameras:
+This package contains checkpoint loading, observation construction,
+asynchronous inference, Cartesian control, gripper commands, and safety checks
+for the physical UR10. Use the repository launcher instead of calling the Python
+module with a machine-specific interpreter path:
 
 ```bash
-/home/luca/venvs/mujoco_ros/bin/python \
-  -m ur10_real_robot.policy_exec.run_diffusion_real \
-  --checkpoint data/checkpoints/u_net_small_moredata.ckpt \
-  --backend speedj \
-  --robot-ip 192.168.2.100 \
-  --camera-mode fake \
-  --max-run-time 10
+CHECKPOINT=data/checkpoints/<real_model>.ckpt \
+./ur10_real_robot/run_diffusion_real.sh
 ```
 
-3. Real cameras, real robot connection, no motion:
+The launcher resolves paths from the Git clone, uses the active Python
+environment (or activates `microwave_dp`), validates required files and imports,
+and forwards experiment variables to
+`ur10_real_robot.policy_exec.run_diffusion_real`.
 
-```bash
-/home/luca/venvs/mujoco_ros/bin/python \
-  -m ur10_real_robot.policy_exec.run_diffusion_real \
-  --checkpoint data/checkpoints/u_net_small_moredata.ckpt \
-  --backend speedj \
-  --robot-ip 192.168.2.100 \
-  --camera-mode realsense \
-  --top-serial SERIAL_TOP \
-  --wrist-serial SERIAL_WRIST \
-  --no-advanced-config \
-  --max-run-time 10
-```
+Follow this order for every new checkpoint:
 
-4. Real motion only after offline/fake tests are clean:
+1. Fake robot and fake cameras:
 
-```bash
-/home/luca/venvs/mujoco_ros/bin/python \
-  -m ur10_real_robot.policy_exec.run_diffusion_real \
-  --checkpoint data/checkpoints/REAL_MODEL.ckpt \
-  --backend speedj \
-  --robot-ip 192.168.2.100 \
-  --enable-motion \
-  --camera-mode realsense \
-  --top-serial SERIAL_TOP \
-  --wrist-serial SERIAL_WRIST \
-  --tcp-offset 0 0 0.022 \
-  --gripper-enable \
-  --gripper-motion-enable \
-  --gripper-force-n 8 \
-  --action-quat-format wxyz \
-  --max-run-time 20
-```
+   ```bash
+   CHECKPOINT=data/checkpoints/<real_model>.ckpt \
+   BACKEND=fake CAMERA_MODE=fake GRIPPER_ENABLE=0 \
+   MAX_RUN_TIME=10 ./ur10_real_robot/run_diffusion_real.sh
+   ```
 
-Defaults are intentionally conservative. The script prompts `YES` before real
-motion is enabled.
+2. Real observations without actuator motion:
+
+   ```bash
+   CHECKPOINT=data/checkpoints/<real_model>.ckpt \
+   BACKEND=speedj CAMERA_MODE=realsense ENABLE_MOTION=0 \
+   GRIPPER_ENABLE=1 GRIPPER_MOTION_ENABLE=0 SHOW_CAMERAS=1 \
+   MAX_RUN_TIME=10 ./ur10_real_robot/run_diffusion_real.sh
+   ```
+
+3. Physical motion only after both tests pass. Set `ENABLE_MOTION=1`, begin with
+   the teach-pendant speed slider low, and type the exact word `YES` when asked.
+
+The launcher defaults to no physical motion. The Python module also performs the
+confirmation, so direct module execution cannot bypass this final check. Full
+validated experiment parameters and troubleshooting are in
+[`README_CODE.md`](../../README_CODE.md).

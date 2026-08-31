@@ -4,7 +4,8 @@ import mujoco
 import mujoco.viewer
 import numpy as np
 
-MODEL_PATH = Path("/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/dp_mujoco/models/universal_robots_ur10e/scene_microwave_camera.xml")
+REPO_ROOT = Path(__file__).resolve().parents[2]
+MODEL_PATH = REPO_ROOT / "dp_mujoco/models/universal_robots_ur10e/scene_microwave_camera.xml"
 
 model = mujoco.MjModel.from_xml_path(str(MODEL_PATH))
 data = mujoco.MjData(model)

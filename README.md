@@ -67,16 +67,33 @@ scripts/           Dataset inspection, replay, plotting, and benchmark utilities
 ur10_real_robot/   Real UR10 teleoperation, cameras, gripper, and policy execution
 ```
 
+## Internal Beginner Tutorial
+
+New interns should start with the complete internal handover manual:
+
+- [Read the compiled tutorial](docs/internal_tutorial/main.pdf)
+- [Open the modular LaTeX sources and build instructions](docs/internal_tutorial/README.md)
+
+It introduces the AI and Diffusion Policy concepts before covering the MuJoCo
+environment, Touch/OpenHaptics integration, demonstration collection, dataset
+validation, GPU-server training, staged UR10 deployment, safety, and experiment
+reporting.
+
 ## Installation
 
-The full setup is described in [README_ENV.md](README_ENV.md).
+Use the dedicated guide for each machine:
 
-Quick simulation environment setup:
+- [Local computer environment](README_ENV.md)
+- [GPU server, Docker, and training](README_SERVER.md)
+- [Project programs and complete workflows](README_CODE.md)
+
+Quick local environment setup:
 
 ```bash
-conda env create -f environment_sim.yml
-conda activate <your_env_name>
-pip install -r requirements_sim.txt
+mamba env create -f environment_local.yml
+conda activate microwave_dp
+python -m pip install --no-deps -e ./diffusion_policy
+python scripts/check_environment.py
 ```
 
 Real-robot execution additionally requires the UR10 network setup, the OnRobot
@@ -115,24 +132,34 @@ PYTHONPATH=. python3 scripts/compare_live_camera_to_zarr.py \
 Training uses Hydra configuration files. Example:
 
 ```bash
-python train.py \
-  --config-name=train_e_waste_unet_real \
-  task=e_waste_image_unet_real \
-  training.device=cuda:0
+python /workspace/diffusion_policy/train.py \
+  --config-name=train_e_waste_unet_real_small \
+  task.dataset_path=/workspace/data/datasets/<dataset_name>.zarr \
+  training.device=cuda:0 \
+  logging.mode=disabled
 ```
+
+This command is run inside the GPU-server container after following
+`README_SERVER.md`.
 
 ### 4. Real-Robot Execution
 
-The real robot launcher keeps the execution parameters in one place:
+First verify a real-robot checkpoint with fake hardware:
 
 ```bash
 CHECKPOINT=data/checkpoints/<checkpoint>.ckpt \
-ENABLE_MOTION=1 \
+BACKEND=fake \
+CAMERA_MODE=fake \
+ENABLE_MOTION=0 \
+GRIPPER_ENABLE=0 \
+GRIPPER_MOTION_ENABLE=0 \
+MAX_RUN_TIME=10 \
 ./ur10_real_robot/run_diffusion_real.sh
 ```
 
-Start real-robot experiments with a low speed slider and keep the emergency stop
-reachable.
+The staged real-hardware procedure and full experiment parameters are documented
+in `README_CODE.md`. Start physical tests with a low speed slider and keep the
+emergency stop reachable.
 
 ## Experiments
 

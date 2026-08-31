@@ -1,23 +1,55 @@
-#!/bin/zsh
-# Script pour lancer la teleop Touch + backend robot.
-#
-# Safe par defaut:
-#   ./ur10_real_robot/run_teleop.sh
-#
-# Connexion robot sans mouvement:
-#   REAL_BACKEND=speedj ./ur10_real_robot/run_teleop.sh
-#
-# Vraie teleop robot:
-#   REAL_BACKEND=speedj ENABLE_MOTION=1 ./ur10_real_robot/run_teleop.sh
-#
-# Preset dataset reel pick-and-drop:
-#   REAL_DATASET_PRESET=1 ./ur10_real_robot/run_teleop.sh
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+# Launch Touch-based teleoperation for either the fake backend or the UR10.
+# Configuration is supplied through environment variables so one recorded
+# dataset can be reproduced without editing Python source files.
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="${PROJECT_ROOT:-$(cd -- "$SCRIPT_DIR/.." && pwd)}"
+export PROJECT_ROOT
+
+show_help() {
+  cat <<'EOF'
+Usage: ./ur10_real_robot/run_teleop.sh
+
+Safe default:
+  Fake robot, no cameras, no gripper, no recording, no physical motion.
+
+Final real-data preset (still motion-disabled unless explicitly enabled):
+  REAL_DATASET_PRESET=1 DATASET_PATH=data/datasets/<name>.zarr \
+    ./ur10_real_robot/run_teleop.sh
+
+To permit physical arm motion, add REAL_BACKEND=speedj ENABLE_MOTION=1. The
+launcher asks for an explicit YES before it starts the control process.
+
+Useful environment variables:
+  CONDA_ENV_NAME=microwave_dp  Environment used when none is active
+  PYTHON_BIN=/path/to/python   Explicit Python interpreter
+  TOUCH_BUILD=auto             auto, 1 (always build), or 0 (never build)
+  START_TOUCH_DRIVER=1         Set to 0 if /touch/pose already exists
+  PREFLIGHT_ONLY=1             Validate configuration without opening hardware
+
+All available defaults are defined near the top of this script. See
+README_CODE.md for the full data-collection command and safety procedure.
+EOF
+}
+
+if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+  show_help
+  exit 0
+fi
+(( $# == 0 )) || { show_help >&2; exit 2; }
+
+# shellcheck source=scripts/lib/launch_common.sh
+source "$PROJECT_ROOT/scripts/lib/launch_common.sh"
 
 export REAL_DATASET_PRESET="${REAL_DATASET_PRESET:-0}"
 
-if [[ "$REAL_DATASET_PRESET" == "1" ]]; then
+# This preset configures the final sensor/recording interface. It deliberately
+# does not authorize physical motion; ENABLE_MOTION=1 remains explicit.
+if launch_is_enabled "$REAL_DATASET_PRESET"; then
   export REAL_BACKEND="${REAL_BACKEND:-speedj}"
-  export ENABLE_MOTION="${ENABLE_MOTION:-1}"
   export ROBOT_IP="${ROBOT_IP:-192.168.2.100}"
   export CONTROL_HZ="${CONTROL_HZ:-50}"
   export TCP_OFFSET="${TCP_OFFSET:-0 0 0.022}"
@@ -39,7 +71,6 @@ if [[ "$REAL_DATASET_PRESET" == "1" ]]; then
   export TOUCH_ROT_METHOD="${TOUCH_ROT_METHOD:-matrix}"
   export HOME_RESET_MAX_JOINT_VEL="${HOME_RESET_MAX_JOINT_VEL:-0.08}"
   export GRIPPER_ENABLE="${GRIPPER_ENABLE:-1}"
-  export GRIPPER_MOTION_ENABLE="${GRIPPER_MOTION_ENABLE:-1}"
   export GRIPPER_CONTROL_MODE="${GRIPPER_CONTROL_MODE:-button}"
   export GRIPPER_OPEN_WIDTH_MM="${GRIPPER_OPEN_WIDTH_MM:-85}"
   export INITIAL_GRIPPER_WIDTH_MM="${INITIAL_GRIPPER_WIDTH_MM:-85}"
@@ -55,8 +86,8 @@ if [[ "$REAL_DATASET_PRESET" == "1" ]]; then
   export NO_ADVANCED_CONFIG="${NO_ADVANCED_CONFIG:-0}"
   export TOP_SERIAL="${TOP_SERIAL:-332322072359}"
   export WRIST_SERIAL="${WRIST_SERIAL:-043422251624}"
-  export TOP_CAMERA_CONFIG="${TOP_CAMERA_CONFIG:-/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/camera/config/d435_config_dataset.json}"
-  export WRIST_CAMERA_CONFIG="${WRIST_CAMERA_CONFIG:-/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/camera/config/d455_config_dataset.json}"
+  export TOP_CAMERA_CONFIG="${TOP_CAMERA_CONFIG:-ur10_real_robot/camera/config/d435_config_dataset.json}"
+  export WRIST_CAMERA_CONFIG="${WRIST_CAMERA_CONFIG:-ur10_real_robot/camera/config/d455_config_dataset.json}"
   export TOP_CROP="${TOP_CROP:-40 30 560 420}"
   export WRIST_CROP="${WRIST_CROP:-0 0 640 480}"
   export DATASET_WIDTH="${DATASET_WIDTH:-320}"
@@ -91,7 +122,7 @@ export HOME_RESET_KP="${HOME_RESET_KP:-1.0}"
 export HOME_RESET_MAX_JOINT_VEL="${HOME_RESET_MAX_JOINT_VEL:-0.08}"
 export HOME_RESET_THRESHOLD_DEG="${HOME_RESET_THRESHOLD_DEG:-0.5}"
 export GRIPPER_ENABLE="${GRIPPER_ENABLE:-0}"
-export GRIPPER_MOTION_ENABLE="${GRIPPER_MOTION_ENABLE:-0}"
+export GRIPPER_MOTION_ENABLE="${GRIPPER_MOTION_ENABLE:-$ENABLE_MOTION}"
 export GRIPPER_IP="${GRIPPER_IP:-192.168.1.1}"
 export GRIPPER_PORT="${GRIPPER_PORT:-502}"
 export GRIPPER_OPEN_WIDTH_MM="${GRIPPER_OPEN_WIDTH_MM:-85}"
@@ -109,8 +140,8 @@ export CAMERA_ENABLE="${CAMERA_ENABLE:-0}"
 export CAMERA_MODE="${CAMERA_MODE:-realsense}"
 export TOP_SERIAL="${TOP_SERIAL:-332322072359}"
 export WRIST_SERIAL="${WRIST_SERIAL:-043422251624}"
-export TOP_CAMERA_CONFIG="${TOP_CAMERA_CONFIG:-/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/camera/config/d435_config_dataset.json}"
-export WRIST_CAMERA_CONFIG="${WRIST_CAMERA_CONFIG:-/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/camera/config/d455_config_dataset.json}"
+export TOP_CAMERA_CONFIG="${TOP_CAMERA_CONFIG:-ur10_real_robot/camera/config/d435_config_dataset.json}"
+export WRIST_CAMERA_CONFIG="${WRIST_CAMERA_CONFIG:-ur10_real_robot/camera/config/d455_config_dataset.json}"
 export NO_ADVANCED_CONFIG="${NO_ADVANCED_CONFIG:-0}"
 export DATASET_WIDTH="${DATASET_WIDTH:-320}"
 export DATASET_HEIGHT="${DATASET_HEIGHT:-240}"
@@ -123,213 +154,197 @@ export MIN_EPISODE_STEPS="${MIN_EPISODE_STEPS:-3}"
 export DATASET_APPEND_LATEST="${DATASET_APPEND_LATEST:-0}"
 export DATASET_ROOT="${DATASET_ROOT:-data/datasets}"
 export DATASET_PATH="${DATASET_PATH:-}"
-export TOUCH_BUILD="${TOUCH_BUILD:-0}"
-export TELEOP_START_DELAY="${TELEOP_START_DELAY:-3}"
+export TOUCH_BUILD="${TOUCH_BUILD:-auto}"
+export START_TOUCH_DRIVER="${START_TOUCH_DRIVER:-1}"
+export TOUCH_START_TIMEOUT="${TOUCH_START_TIMEOUT:-15}"
+export PREFLIGHT_ONLY="${PREFLIGHT_ONLY:-0}"
 
-echo "-------------------------------------------"
-echo "UR10 REAL TELEOP LAUNCHER"
-echo "-------------------------------------------"
-echo "backend          : $REAL_BACKEND"
-echo "enable motion    : $ENABLE_MOTION"
-echo "robot ip         : $ROBOT_IP"
-echo "control hz       : $CONTROL_HZ"
-echo "tcp offset       : $TCP_OFFSET"
-echo "base rz deg      : $BASE_RZ_DEG"
-echo "kp pos           : $KP_POS"
-echo "max joint vel    : $MAX_JOINT_VEL"
-echo "position scale   : $POSITION_SCALE"
-echo "max target speed : $MAX_TARGET_SPEED"
-echo "max pos err stop : $MAX_POS_ERROR_STOP"
-echo "max rot err stop : $MAX_ROT_ERROR_STOP"
-echo "target alpha pos : $TARGET_ALPHA_POS"
-echo "target alpha rot : $TARGET_ALPHA_ROT"
-echo "touch axis map   : $TOUCH_AXIS_MAP"
-echo "touch rot map    : $TOUCH_ROT_MAP"
-echo "touch rot apply  : $TOUCH_ROT_APPLY"
-echo "touch rot method : $TOUCH_ROT_METHOD"
-echo "home reset vel   : $HOME_RESET_MAX_JOINT_VEL"
-echo "gripper enable   : $GRIPPER_ENABLE"
-echo "gripper motion   : $GRIPPER_MOTION_ENABLE"
-echo "gripper mode     : $GRIPPER_CONTROL_MODE"
-echo "grip cmd mode    : $GRIPPER_COMMAND_MODE"
-echo "grip steps       : $GRIPPER_STEP_VALUES"
-echo "gripper ip       : $GRIPPER_IP:$GRIPPER_PORT"
-echo "initial grip     : $INITIAL_GRIPPER_WIDTH_MM mm"
-echo "record grip q    : $RECORD_GRIPPER_QPOS_SOURCE"
-echo "record grip act  : $RECORD_GRIPPER_ACTION_SOURCE"
-echo "camera enable    : $CAMERA_ENABLE"
-echo "advanced config  : $(( 1 - ${NO_ADVANCED_CONFIG:-0} ))"
-echo "top cam config   : $TOP_CAMERA_CONFIG"
-echo "wrist cam config : $WRIST_CAMERA_CONFIG"
-echo "record enable    : $RECORD_ENABLE"
-echo "min ep steps     : $MIN_EPISODE_STEPS"
-echo "show cameras     : $SHOW_CAMERAS"
-echo "top crop         : ${TOP_CROP:-none}"
-echo "wrist crop       : ${WRIST_CROP:-none}"
-echo "dataset append   : $DATASET_APPEND_LATEST"
-echo "dataset path     : ${DATASET_PATH:-auto}"
-echo "touch build      : $TOUCH_BUILD"
-echo "teleop delay     : $TELEOP_START_DELAY s"
-echo "-------------------------------------------"
-
-# Terminal 1 : teleop Python
-
-(gnome-terminal -- zsh -c '
-source /opt/ros/humble/setup.zsh
-source ~/venvs/mujoco_ros/bin/activate
-cd /home/luca/Stage_Lirmm/Diffusion-model-isaacsim
-
-echo "[real teleop] waiting ${TELEOP_START_DELAY:-3}s for Touch ROS2 node..."
-sleep "${TELEOP_START_DELAY:-3}"
-
-motion_arg=()
-if [[ "${ENABLE_MOTION:-0}" == "1" ]]; then
-  motion_arg+=(--enable-motion)
+case "$REAL_BACKEND" in
+  fake|speedj) ;;
+  *) launch_die "REAL_BACKEND must be 'fake' or 'speedj'." ;;
+esac
+if launch_is_enabled "$ENABLE_MOTION" && [[ "$REAL_BACKEND" != "speedj" ]]; then
+  launch_die "ENABLE_MOTION=1 requires REAL_BACKEND=speedj."
+fi
+if launch_is_enabled "$GRIPPER_MOTION_ENABLE" && ! launch_is_enabled "$GRIPPER_ENABLE"; then
+  launch_die "GRIPPER_MOTION_ENABLE=1 requires GRIPPER_ENABLE=1."
+fi
+if launch_is_enabled "$RECORD_ENABLE" && [[ -z "$DATASET_PATH" ]] &&
+   ! launch_is_enabled "$DATASET_APPEND_LATEST"; then
+  launch_warn "No DATASET_PATH was supplied; a timestamped dataset will be created."
 fi
 
-gripper_arg=()
-if [[ "${GRIPPER_ENABLE:-0}" == "1" ]]; then
-  gripper_arg+=(--gripper-enable)
+TOP_CAMERA_CONFIG="$(launch_resolve_project_path "$TOP_CAMERA_CONFIG")"
+WRIST_CAMERA_CONFIG="$(launch_resolve_project_path "$WRIST_CAMERA_CONFIG")"
+DATASET_ROOT="$(launch_resolve_project_path "$DATASET_ROOT")"
+if [[ -n "$DATASET_PATH" ]]; then
+  DATASET_PATH="$(launch_resolve_project_path "$DATASET_PATH")"
+fi
+export TOP_CAMERA_CONFIG WRIST_CAMERA_CONFIG DATASET_ROOT DATASET_PATH
+
+read -r -a tcp_offset <<<"$TCP_OFFSET"
+read -r -a gripper_step_values <<<"$GRIPPER_STEP_VALUES"
+(( ${#tcp_offset[@]} == 3 )) || launch_die "TCP_OFFSET must contain exactly 3 values."
+(( ${#gripper_step_values[@]} == 3 )) || launch_die "GRIPPER_STEP_VALUES must contain OPEN, NARROW, and GRASP."
+
+top_crop=()
+wrist_crop=()
+if [[ -n "$TOP_CROP" ]]; then
+  read -r -a top_crop <<<"$TOP_CROP"
+  (( ${#top_crop[@]} == 4 )) || launch_die "TOP_CROP must contain 4 integers."
+fi
+if [[ -n "$WRIST_CROP" ]]; then
+  read -r -a wrist_crop <<<"$WRIST_CROP"
+  (( ${#wrist_crop[@]} == 4 )) || launch_die "WRIST_CROP must contain 4 integers."
 fi
 
-gripper_motion_arg=()
-if [[ "${GRIPPER_MOTION_ENABLE:-0}" == "1" ]]; then
-  gripper_motion_arg+=(--gripper-motion-enable)
+launch_select_python
+launch_source_ros2
+launch_prepare_touch_workspace
+launch_require_file "$PROJECT_ROOT/dp_mujoco/models/universal_robots_ur10e/ur10_d455_support_rg2ft_fixed_gripper.urdf" "UR10 URDF"
+if [[ "$CAMERA_MODE" == "realsense" ]] && ! launch_is_enabled "$NO_ADVANCED_CONFIG" &&
+   { launch_is_enabled "$CAMERA_ENABLE" || launch_is_enabled "$RECORD_ENABLE"; }; then
+  launch_require_file "$TOP_CAMERA_CONFIG" "top-camera JSON configuration"
+  launch_require_file "$WRIST_CAMERA_CONFIG" "wrist-camera JSON configuration"
+fi
+launch_require_python_modules numpy cv2 rclpy pinocchio zarr pyrealsense2 pymodbus urx
+
+advanced_status="enabled"
+launch_is_enabled "$NO_ADVANCED_CONFIG" && advanced_status="disabled"
+
+cat <<EOF
+-------------------------------------------
+UR10 REAL TELEOP LAUNCHER
+-------------------------------------------
+backend          : $REAL_BACKEND
+enable motion    : $ENABLE_MOTION
+robot ip         : $ROBOT_IP
+control hz       : $CONTROL_HZ
+tcp offset       : $TCP_OFFSET
+base rz deg      : $BASE_RZ_DEG
+kp pos/rot       : $KP_POS / $KP_ROT
+max joint vel    : $MAX_JOINT_VEL
+position scale   : $POSITION_SCALE
+max target speed : $MAX_TARGET_SPEED
+max pos err stop : $MAX_POS_ERROR_STOP
+max rot err stop : $MAX_ROT_ERROR_STOP
+target alphas    : $TARGET_ALPHA_POS / $TARGET_ALPHA_ROT
+touch axis map   : $TOUCH_AXIS_MAP
+touch rot map    : $TOUCH_ROT_MAP
+gripper          : $GRIPPER_ENABLE motion=$GRIPPER_MOTION_ENABLE
+gripper mode     : $GRIPPER_CONTROL_MODE / $GRIPPER_COMMAND_MODE
+gripper steps    : $GRIPPER_STEP_VALUES
+initial grip     : $INITIAL_GRIPPER_WIDTH_MM mm
+record grip q    : $RECORD_GRIPPER_QPOS_SOURCE
+record grip act  : $RECORD_GRIPPER_ACTION_SOURCE
+camera           : $CAMERA_ENABLE mode=$CAMERA_MODE
+advanced config  : $advanced_status
+record           : $RECORD_ENABLE at $RECORD_FREQ Hz
+dataset path     : ${DATASET_PATH:-auto}
+show cameras     : $SHOW_CAMERAS
+-------------------------------------------
+EOF
+
+if launch_is_enabled "$PREFLIGHT_ONLY"; then
+  launch_info "Preflight passed; no hardware process was started."
+  exit 0
 fi
 
-camera_arg=()
-if [[ "${CAMERA_ENABLE:-0}" == "1" ]]; then
-  camera_arg+=(--camera-enable)
-fi
+motion_args=()
+gripper_args=()
+gripper_motion_args=()
+camera_args=()
+record_args=()
+show_camera_args=()
+advanced_args=()
+dataset_path_args=()
+append_latest_args=()
+top_crop_args=()
+wrist_crop_args=()
 
-record_arg=()
-if [[ "${RECORD_ENABLE:-0}" == "1" ]]; then
-  record_arg+=(--record-enable)
-fi
+launch_is_enabled "$ENABLE_MOTION" && motion_args+=(--enable-motion)
+launch_is_enabled "$GRIPPER_ENABLE" && gripper_args+=(--gripper-enable)
+launch_is_enabled "$GRIPPER_MOTION_ENABLE" &&
+  gripper_motion_args+=(--gripper-motion-enable)
+launch_is_enabled "$CAMERA_ENABLE" && camera_args+=(--camera-enable)
+launch_is_enabled "$RECORD_ENABLE" && record_args+=(--record-enable)
+launch_is_enabled "$SHOW_CAMERAS" && show_camera_args+=(--show-cameras)
+launch_is_enabled "$NO_ADVANCED_CONFIG" && advanced_args+=(--no-advanced-config)
+launch_is_enabled "$DATASET_APPEND_LATEST" &&
+  append_latest_args+=(--append-latest-dataset)
+[[ -n "$DATASET_PATH" ]] && dataset_path_args+=(--dataset-path "$DATASET_PATH")
+(( ${#top_crop[@]} > 0 )) && top_crop_args+=(--top-crop "${top_crop[@]}")
+(( ${#wrist_crop[@]} > 0 )) && wrist_crop_args+=(--wrist-crop "${wrist_crop[@]}")
 
-show_camera_arg=()
-if [[ "${SHOW_CAMERAS:-0}" == "1" ]]; then
-  show_camera_arg+=(--show-cameras)
-fi
+cleanup() {
+  launch_stop_touch_driver
+}
+trap cleanup EXIT INT TERM
 
-advanced_arg=()
-if [[ "${NO_ADVANCED_CONFIG:-0}" == "1" ]]; then
-  advanced_arg+=(--no-advanced-config)
-fi
-
-dataset_path_arg=()
-if [[ -n "${DATASET_PATH:-}" ]]; then
-  dataset_path_arg+=(--dataset-path "${DATASET_PATH}")
-fi
-
-append_latest_arg=()
-if [[ "${DATASET_APPEND_LATEST:-0}" == "1" ]]; then
-  append_latest_arg+=(--append-latest-dataset)
-fi
-
-top_crop_arg=()
-if [[ -n "${TOP_CROP:-}" ]]; then
-  top_crop=(${=TOP_CROP})
-  top_crop_arg+=(--top-crop "${top_crop[@]}")
-fi
-
-wrist_crop_arg=()
-if [[ -n "${WRIST_CROP:-}" ]]; then
-  wrist_crop=(${=WRIST_CROP})
-  wrist_crop_arg+=(--wrist-crop "${wrist_crop[@]}")
-fi
-
-tcp_offset=(${=TCP_OFFSET})
-gripper_step_values=(${=GRIPPER_STEP_VALUES})
-
-python3 -m ur10_real_robot.run_real_teleop \
-  --backend "${REAL_BACKEND:-fake}" \
-  ${motion_arg[@]} \
-  --robot-ip "${ROBOT_IP:-192.168.2.100}" \
-  --control-hz "${CONTROL_HZ:-50}" \
-  --tcp-offset "${tcp_offset[@]}" \
-  --base-rz-deg "${BASE_RZ_DEG:-180}" \
-  --kp-pos "${KP_POS:-0.35}" \
-  --kp-rot "${KP_ROT:-0.0}" \
-  --max-joint-vel "${MAX_JOINT_VEL:-0.08}" \
-  --alpha-dq "${ALPHA_DQ:-0.04}" \
-  --speedj-a "${SPEEDJ_A:-0.06}" \
-  --position-scale "${POSITION_SCALE:-0.15}" \
-  --max-target-speed "${MAX_TARGET_SPEED:-0.05}" \
-  --max-pos-error-stop "${MAX_POS_ERROR_STOP:-0.20}" \
-  --max-rot-error-stop "${MAX_ROT_ERROR_STOP:-0.60}" \
-  --target-alpha-pos "${TARGET_ALPHA_POS:-0.25}" \
-  --target-alpha-rot "${TARGET_ALPHA_ROT:-0.15}" \
-  --touch-axis-map "${TOUCH_AXIS_MAP:-swap_xy_neg_y}" \
-  --touch-rot-map "${TOUCH_ROT_MAP:-same_as_position}" \
-  --touch-rot-apply "${TOUCH_ROT_APPLY:-world}" \
-  --touch-rot-method "${TOUCH_ROT_METHOD:-matrix}" \
-  --watchdog-timeout "${WATCHDOG_TIMEOUT:-0.30}" \
-  --home-reset-kp "${HOME_RESET_KP:-1.0}" \
-  --home-reset-max-joint-vel "${HOME_RESET_MAX_JOINT_VEL:-0.08}" \
-  --home-reset-threshold-deg "${HOME_RESET_THRESHOLD_DEG:-0.5}" \
-  ${gripper_arg[@]} \
-  ${gripper_motion_arg[@]} \
-  --gripper-ip "${GRIPPER_IP:-192.168.1.1}" \
-  --gripper-port "${GRIPPER_PORT:-502}" \
-  --gripper-open-width-mm "${GRIPPER_OPEN_WIDTH_MM:-85}" \
-  --initial-gripper-width-mm "${INITIAL_GRIPPER_WIDTH_MM:-85}" \
-  --gripper-close-width-mm "${GRIPPER_CLOSE_WIDTH_MM:-35}" \
-  --gripper-force-n "${GRIPPER_FORCE_N:-8}" \
-  --gripper-command-period "${GRIPPER_COMMAND_PERIOD:-0.10}" \
-  --gripper-deadband-mm "${GRIPPER_DEADBAND_MM:-1.0}" \
-  --gripper-control-mode "${GRIPPER_CONTROL_MODE:-button}" \
-  --gripper-command-mode "${GRIPPER_COMMAND_MODE:-continuous}" \
-  --gripper-step-values "${gripper_step_values[@]}" \
-  --record-gripper-qpos-source "${RECORD_GRIPPER_QPOS_SOURCE:-actual_width}" \
-  --record-gripper-action-source "${RECORD_GRIPPER_ACTION_SOURCE:-actual_width}" \
-  ${camera_arg[@]} \
-  ${record_arg[@]} \
-  ${show_camera_arg[@]} \
-  ${advanced_arg[@]} \
-  ${dataset_path_arg[@]} \
-  ${append_latest_arg[@]} \
-  --camera-mode "${CAMERA_MODE:-realsense}" \
-  --top-serial "${TOP_SERIAL:-332322072359}" \
-  --wrist-serial "${WRIST_SERIAL:-043422251624}" \
-  --top-camera-config "${TOP_CAMERA_CONFIG}" \
-  --wrist-camera-config "${WRIST_CAMERA_CONFIG}" \
-  --dataset-width "${DATASET_WIDTH:-320}" \
-  --dataset-height "${DATASET_HEIGHT:-240}" \
-  --dataset-root "${DATASET_ROOT:-data/datasets}" \
-  --min-episode-steps "${MIN_EPISODE_STEPS:-3}" \
-  ${top_crop_arg[@]} \
-  ${wrist_crop_arg[@]} \
-  --record-freq "${RECORD_FREQ:-10}"
-
-status=$?
-echo ""
-echo "[real teleop] process exited with status $status"
-echo "Press Enter to close this terminal..."
-read
-exec zsh -i
-') &
-
-# Terminal 2 : ROS2 + Touch driver + RViz
-
-(gnome-terminal -- zsh -c '
-source /opt/ros/humble/setup.zsh
-source ~/venvs/mujoco_ros/bin/activate
-cd /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ros2_WS
-if [[ "${TOUCH_BUILD:-0}" == "1" ]]; then
-  colcon build
-fi
-source install/setup.zsh
-cd /home/luca/Stage_Lirmm/Diffusion-model-isaacsim
-ros2 launch touch_ros2_driver touch_rviz.launch.py
-status=$?
-echo ""
-echo "[touch ros2] process exited with status $status"
-echo "Press Enter to close this terminal..."
-read
-exec zsh -i
-') &
-
-
-
-wait
+launch_start_touch_driver
+launch_info "Starting teleoperation. Press Ctrl+C to stop."
+cd "$PROJECT_ROOT"
+teleop_command=(
+  "$PYTHON_BIN"
+  -m
+  ur10_real_robot.run_real_teleop
+  --backend "$REAL_BACKEND"
+  "${motion_args[@]}"
+  --robot-ip "$ROBOT_IP"
+  --control-hz "$CONTROL_HZ"
+  --tcp-offset "${tcp_offset[@]}"
+  --base-rz-deg "$BASE_RZ_DEG"
+  --kp-pos "$KP_POS"
+  --kp-rot "$KP_ROT"
+  --max-joint-vel "$MAX_JOINT_VEL"
+  --alpha-dq "$ALPHA_DQ"
+  --speedj-a "$SPEEDJ_A"
+  --position-scale "$POSITION_SCALE"
+  --max-target-speed "$MAX_TARGET_SPEED"
+  --max-pos-error-stop "$MAX_POS_ERROR_STOP"
+  --max-rot-error-stop "$MAX_ROT_ERROR_STOP"
+  --target-alpha-pos "$TARGET_ALPHA_POS"
+  --target-alpha-rot "$TARGET_ALPHA_ROT"
+  --touch-axis-map "$TOUCH_AXIS_MAP"
+  --touch-rot-map "$TOUCH_ROT_MAP"
+  --touch-rot-apply "$TOUCH_ROT_APPLY"
+  --touch-rot-method "$TOUCH_ROT_METHOD"
+  --watchdog-timeout "$WATCHDOG_TIMEOUT"
+  --home-reset-kp "$HOME_RESET_KP"
+  --home-reset-max-joint-vel "$HOME_RESET_MAX_JOINT_VEL"
+  --home-reset-threshold-deg "$HOME_RESET_THRESHOLD_DEG"
+  "${gripper_args[@]}"
+  "${gripper_motion_args[@]}"
+  --gripper-ip "$GRIPPER_IP"
+  --gripper-port "$GRIPPER_PORT"
+  --gripper-open-width-mm "$GRIPPER_OPEN_WIDTH_MM"
+  --initial-gripper-width-mm "$INITIAL_GRIPPER_WIDTH_MM"
+  --gripper-close-width-mm "$GRIPPER_CLOSE_WIDTH_MM"
+  --gripper-force-n "$GRIPPER_FORCE_N"
+  --gripper-command-period "$GRIPPER_COMMAND_PERIOD"
+  --gripper-deadband-mm "$GRIPPER_DEADBAND_MM"
+  --gripper-control-mode "$GRIPPER_CONTROL_MODE"
+  --gripper-command-mode "$GRIPPER_COMMAND_MODE"
+  --gripper-step-values "${gripper_step_values[@]}"
+  --record-gripper-qpos-source "$RECORD_GRIPPER_QPOS_SOURCE"
+  --record-gripper-action-source "$RECORD_GRIPPER_ACTION_SOURCE"
+  "${camera_args[@]}"
+  "${record_args[@]}"
+  "${show_camera_args[@]}"
+  "${advanced_args[@]}"
+  "${dataset_path_args[@]}"
+  "${append_latest_args[@]}"
+  --camera-mode "$CAMERA_MODE"
+  --top-serial "$TOP_SERIAL"
+  --wrist-serial "$WRIST_SERIAL"
+  --top-camera-config "$TOP_CAMERA_CONFIG"
+  --wrist-camera-config "$WRIST_CAMERA_CONFIG"
+  --dataset-width "$DATASET_WIDTH"
+  --dataset-height "$DATASET_HEIGHT"
+  --dataset-root "$DATASET_ROOT"
+  --min-episode-steps "$MIN_EPISODE_STEPS"
+  "${top_crop_args[@]}"
+  "${wrist_crop_args[@]}"
+  --record-freq "$RECORD_FREQ"
+)
+"${teleop_command[@]}"

@@ -7,17 +7,26 @@ import mujoco.viewer
 import numpy as np
 import matplotlib.pyplot as plt
 
+ROOT_DIR = Path(__file__).resolve().parents[1]
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Replay a recorded MuJoCo qpos trajectory")
     parser.add_argument(
         "npz_path",
         nargs="?",
-        default="/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/data/outputs/smooth_trajectory.npz",
+        default=str(ROOT_DIR / "data" / "outputs" / "smooth_trajectory.npz"),
         help="Path to the recorded NPZ file",
     )
     parser.add_argument(
         "--model_xml",
-        default="/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/dp_mujoco/models/universal_robots_ur10e/scene_microwave.xml",
+        default=str(
+            ROOT_DIR
+            / "dp_mujoco"
+            / "models"
+            / "universal_robots_ur10e"
+            / "scene_microwave.xml"
+        ),
         help="MuJoCo XML scene used for replay",
     )
     parser.add_argument(

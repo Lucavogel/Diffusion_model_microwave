@@ -1,13 +1,48 @@
-#!/bin/zsh
-# Preset launcher for real UR10 diffusion execution.
-#
-# Dry run with real cameras + robot connection but no motion:
-#   CHECKPOINT=data/checkpoints/real_model_pick_orientation.ckpt ./ur10_real_robot/run_diffusion_real.sh
-#
-# Real execution:
-#   CHECKPOINT=data/checkpoints/real_model_pick_orientation.ckpt ENABLE_MOTION=1 ./ur10_real_robot/run_diffusion_real.sh
+#!/usr/bin/env bash
+set -Eeuo pipefail
 
-export CHECKPOINT="${CHECKPOINT:-data/checkpoints/real_model_pick_orientation.ckpt}"
+# Deploy one real-robot Diffusion Policy checkpoint. The shell layer validates
+# paths and configuration; the Python runner retains the final YES confirmation
+# before any physical UR10 motion.
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="${PROJECT_ROOT:-$(cd -- "$SCRIPT_DIR/.." && pwd)}"
+export PROJECT_ROOT
+
+show_help() {
+  cat <<'EOF'
+Usage:
+  CHECKPOINT=data/checkpoints/<model>.ckpt \
+    ./ur10_real_robot/run_diffusion_real.sh
+
+The default connects to the configured real devices but does not move the arm
+or gripper. Add ENABLE_MOTION=1 to authorize motion; the Python runner then asks
+you to type YES.
+
+Completely fake smoke test:
+  CHECKPOINT=data/checkpoints/<model>.ckpt \
+  BACKEND=fake CAMERA_MODE=fake GRIPPER_ENABLE=0 ENABLE_MOTION=0 \
+  MAX_RUN_TIME=5 ./ur10_real_robot/run_diffusion_real.sh
+
+Useful environment variables:
+  CONDA_ENV_NAME=microwave_dp  Environment used when none is active
+  PYTHON_BIN=/path/to/python   Explicit Python interpreter
+  PREFLIGHT_ONLY=1             Check files/imports without opening hardware
+
+See README_CODE.md for the complete pick-and-drop and microwave configurations.
+EOF
+}
+
+if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+  show_help
+  exit 0
+fi
+(( $# == 0 )) || { show_help >&2; exit 2; }
+
+# shellcheck source=scripts/lib/launch_common.sh
+source "$PROJECT_ROOT/scripts/lib/launch_common.sh"
+
+export CHECKPOINT="${CHECKPOINT:-}"
 export ENABLE_MOTION="${ENABLE_MOTION:-0}"
 export BACKEND="${BACKEND:-speedj}"
 export ROBOT_IP="${ROBOT_IP:-192.168.2.100}"
@@ -24,6 +59,7 @@ export DATASET_WIDTH="${DATASET_WIDTH:-320}"
 export DATASET_HEIGHT="${DATASET_HEIGHT:-240}"
 export NO_ADVANCED_CONFIG="${NO_ADVANCED_CONFIG:-0}"
 
+export URDF="${URDF:-dp_mujoco/models/universal_robots_ur10e/ur10_d455_support_rg2ft_fixed_gripper.urdf}"
 export TCP_OFFSET="${TCP_OFFSET:-0 0 0.022}"
 export BASE_RZ_DEG="${BASE_RZ_DEG:-180}"
 export CONTROL_HZ="${CONTROL_HZ:-50}"
@@ -50,7 +86,7 @@ export SMOOTH_ALPHA_ROT="${SMOOTH_ALPHA_ROT:-0.08}"
 export SMOOTH_ALPHA_GRIPPER="${SMOOTH_ALPHA_GRIPPER:-0.35}"
 
 export GRIPPER_ENABLE="${GRIPPER_ENABLE:-1}"
-export GRIPPER_MOTION_ENABLE="${GRIPPER_MOTION_ENABLE:-1}"
+export GRIPPER_MOTION_ENABLE="${GRIPPER_MOTION_ENABLE:-$ENABLE_MOTION}"
 export GRIPPER_IP="${GRIPPER_IP:-192.168.1.1}"
 export GRIPPER_PORT="${GRIPPER_PORT:-502}"
 export GRIPPER_OPEN_WIDTH_MM="${GRIPPER_OPEN_WIDTH_MM:-85}"
@@ -77,82 +113,129 @@ export SHOW_CAMERAS="${SHOW_CAMERAS:-0}"
 export CAMERA_DISPLAY_PERIOD="${CAMERA_DISPLAY_PERIOD:-0.10}"
 export CAMERA_DISPLAY_SCALE="${CAMERA_DISPLAY_SCALE:-2}"
 export IGNORE_ACTION_ORIENTATION="${IGNORE_ACTION_ORIENTATION:-0}"
+export PREFLIGHT_ONLY="${PREFLIGHT_ONLY:-0}"
 
-echo "-------------------------------------------"
-echo "UR10 REAL DIFFUSION LAUNCHER"
-echo "-------------------------------------------"
-echo "checkpoint       : $CHECKPOINT"
-echo "backend          : $BACKEND"
-echo "enable motion    : $ENABLE_MOTION"
-echo "robot ip         : $ROBOT_IP"
-echo "device           : $DEVICE"
-echo "camera mode      : $CAMERA_MODE"
-echo "top serial       : $TOP_SERIAL"
-echo "wrist serial     : $WRIST_SERIAL"
-echo "advanced config  : $(( 1 - ${NO_ADVANCED_CONFIG:-0} ))"
-echo "top crop         : $TOP_CROP"
-echo "wrist crop       : $WRIST_CROP"
-echo "tcp offset       : $TCP_OFFSET"
-echo "base rz deg      : $BASE_RZ_DEG"
-echo "policy hz        : $POLICY_HZ"
-echo "exec horizon     : $EXEC_HORIZON"
-echo "infer steps      : $NUM_INFERENCE_STEPS"
-echo "async hold       : $ASYNC_HOLD_CURRENT_POSE"
-echo "kp pos/rot       : $KP_POS / $KP_ROT"
-echo "max joint vel    : $MAX_JOINT_VEL"
-echo "max target speed : $MAX_TARGET_SPEED"
-echo "max pos err stop : $MAX_POS_ERROR_STOP"
-echo "max rot err stop : $MAX_ROT_ERROR_STOP"
-echo "loop watchdog    : warn=$LOOP_WATCHDOG_WARN_FACTOR stop=$LOOP_WATCHDOG_STOP_FACTOR"
-echo "target dt cap    : ${TARGET_SMOOTHER_DT_CAP:-control_dt}"
-echo "gripper          : $GRIPPER_ENABLE motion=$GRIPPER_MOTION_ENABLE"
-echo "initial grip     : $INITIAL_GRIPPER_WIDTH_MM mm"
-echo "gripper widths   : $GRIPPER_OPEN_WIDTH_MM / $GRIPPER_CLOSE_WIDTH_MM mm"
-echo "gripper force    : $GRIPPER_FORCE_N N"
-echo "gripper latch    : $GRIPPER_LATCH close>$GRIPPER_LATCH_CLOSE_THRESHOLD open<$GRIPPER_LATCH_OPEN_THRESHOLD"
-echo "gripper quantize : $GRIPPER_QUANTIZE values=$GRIPPER_QUANTIZE_VALUES thresholds=${GRIPPER_QUANTIZE_THRESHOLDS:-nearest}"
-echo "show cameras     : $SHOW_CAMERAS scale=$CAMERA_DISPLAY_SCALE"
-echo "max run time     : $MAX_RUN_TIME"
-echo "-------------------------------------------"
+[[ -n "$CHECKPOINT" ]] || launch_die "CHECKPOINT is required. Checkpoints are not stored in Git; copy one into data/checkpoints/."
 
-motion_arg=()
-if [[ "$ENABLE_MOTION" == "1" ]]; then
-  motion_arg+=(--enable-motion)
+case "$BACKEND" in
+  fake|speedj) ;;
+  *) launch_die "BACKEND must be 'fake' or 'speedj'." ;;
+esac
+case "$CAMERA_MODE" in
+  fake|realsense) ;;
+  *) launch_die "CAMERA_MODE must be 'fake' or 'realsense'." ;;
+esac
+if launch_is_enabled "$ENABLE_MOTION" && [[ "$BACKEND" != "speedj" ]]; then
+  launch_die "ENABLE_MOTION=1 requires BACKEND=speedj."
+fi
+if launch_is_enabled "$GRIPPER_MOTION_ENABLE" && ! launch_is_enabled "$GRIPPER_ENABLE"; then
+  launch_die "GRIPPER_MOTION_ENABLE=1 requires GRIPPER_ENABLE=1."
 fi
 
-async_arg=()
-if [[ "$ASYNC_INFERENCE" == "1" ]]; then
-  async_arg+=(--async-inference)
+CHECKPOINT="$(launch_resolve_project_path "$CHECKPOINT")"
+TOP_CAMERA_CONFIG="$(launch_resolve_project_path "$TOP_CAMERA_CONFIG")"
+WRIST_CAMERA_CONFIG="$(launch_resolve_project_path "$WRIST_CAMERA_CONFIG")"
+URDF="$(launch_resolve_project_path "$URDF")"
+export CHECKPOINT TOP_CAMERA_CONFIG WRIST_CAMERA_CONFIG URDF
+
+read -r -a top_crop <<<"$TOP_CROP"
+read -r -a wrist_crop <<<"$WRIST_CROP"
+read -r -a tcp_offset <<<"$TCP_OFFSET"
+read -r -a gripper_quantize_values <<<"$GRIPPER_QUANTIZE_VALUES"
+(( ${#top_crop[@]} == 4 )) || launch_die "TOP_CROP must contain 4 integers."
+(( ${#wrist_crop[@]} == 4 )) || launch_die "WRIST_CROP must contain 4 integers."
+(( ${#tcp_offset[@]} == 3 )) || launch_die "TCP_OFFSET must contain 3 values."
+(( ${#gripper_quantize_values[@]} >= 2 )) || launch_die "GRIPPER_QUANTIZE_VALUES must contain at least two values."
+
+gripper_quantize_thresholds=()
+if [[ -n "$GRIPPER_QUANTIZE_THRESHOLDS" ]]; then
+  read -r -a gripper_quantize_thresholds <<<"$GRIPPER_QUANTIZE_THRESHOLDS"
+  expected_thresholds=$(( ${#gripper_quantize_values[@]} - 1 ))
+  (( ${#gripper_quantize_thresholds[@]} == expected_thresholds )) || launch_die "GRIPPER_QUANTIZE_THRESHOLDS must have one fewer value than GRIPPER_QUANTIZE_VALUES."
 fi
 
-async_hold_arg=()
-if [[ "$ASYNC_HOLD_CURRENT_POSE" == "1" ]]; then
-  async_hold_arg+=(--async-hold-current-pose)
+launch_select_python
+launch_require_file "$CHECKPOINT" "policy checkpoint"
+launch_require_file "$URDF" "UR10 URDF"
+if [[ "$CAMERA_MODE" == "realsense" ]] && ! launch_is_enabled "$NO_ADVANCED_CONFIG"; then
+  launch_require_file "$TOP_CAMERA_CONFIG" "top-camera JSON configuration"
+  launch_require_file "$WRIST_CAMERA_CONFIG" "wrist-camera JSON configuration"
+fi
+launch_require_python_modules torch numpy cv2 pinocchio zarr pyrealsense2 pymodbus urx
+
+advanced_status="enabled"
+launch_is_enabled "$NO_ADVANCED_CONFIG" && advanced_status="disabled"
+
+cat <<EOF
+-------------------------------------------
+UR10 REAL DIFFUSION LAUNCHER
+-------------------------------------------
+checkpoint       : $CHECKPOINT
+backend          : $BACKEND
+enable motion    : $ENABLE_MOTION
+robot ip         : $ROBOT_IP
+device           : $DEVICE
+camera mode      : $CAMERA_MODE
+advanced config  : $advanced_status
+top crop         : $TOP_CROP
+wrist crop       : $WRIST_CROP
+tcp offset       : $TCP_OFFSET
+base rz deg      : $BASE_RZ_DEG
+policy action hz : $POLICY_HZ
+exec horizon     : $EXEC_HORIZON
+denoising steps  : $NUM_INFERENCE_STEPS
+async inference  : $ASYNC_INFERENCE
+async hold       : $ASYNC_HOLD_CURRENT_POSE
+kp pos/rot       : $KP_POS / $KP_ROT
+max joint vel    : $MAX_JOINT_VEL
+max target speed : $MAX_TARGET_SPEED
+max pos err stop : $MAX_POS_ERROR_STOP
+max rot err stop : $MAX_ROT_ERROR_STOP
+gripper          : $GRIPPER_ENABLE motion=$GRIPPER_MOTION_ENABLE
+initial grip     : $INITIAL_GRIPPER_WIDTH_MM mm
+gripper widths   : $GRIPPER_OPEN_WIDTH_MM / $GRIPPER_CLOSE_WIDTH_MM mm
+gripper force    : $GRIPPER_FORCE_N N
+gripper latch    : $GRIPPER_LATCH
+gripper quantize : $GRIPPER_QUANTIZE values=$GRIPPER_QUANTIZE_VALUES
+show cameras     : $SHOW_CAMERAS scale=$CAMERA_DISPLAY_SCALE
+max run time     : $MAX_RUN_TIME
+-------------------------------------------
+EOF
+
+if launch_is_enabled "$PREFLIGHT_ONLY"; then
+  launch_info "Preflight passed; no robot, camera, or gripper was opened."
+  exit 0
 fi
 
-threads_arg=()
-if [[ -n "$TORCH_NUM_THREADS" ]]; then
-  threads_arg+=(--torch-num-threads "$TORCH_NUM_THREADS")
-fi
+motion_args=()
+async_args=()
+async_hold_args=()
+threads_args=()
+target_dt_cap_args=()
+gripper_args=()
+gripper_motion_args=()
+gripper_latch_args=()
+gripper_quantize_args=()
+debug_timing_args=()
+verbose_plan_args=()
+debug_gripper_plan_args=()
+show_cameras_args=()
+ignore_orientation_args=()
+advanced_args=()
 
-target_dt_cap_arg=()
-if [[ -n "$TARGET_SMOOTHER_DT_CAP" ]]; then
-  target_dt_cap_arg+=(--target-smoother-dt-cap "$TARGET_SMOOTHER_DT_CAP")
-fi
-
-gripper_arg=()
-if [[ "$GRIPPER_ENABLE" == "1" ]]; then
-  gripper_arg+=(--gripper-enable)
-fi
-
-gripper_motion_arg=()
-if [[ "$GRIPPER_MOTION_ENABLE" == "1" ]]; then
-  gripper_motion_arg+=(--gripper-motion-enable)
-fi
-
-gripper_latch_arg=()
-if [[ "$GRIPPER_LATCH" == "1" ]]; then
-  gripper_latch_arg+=(
+launch_is_enabled "$ENABLE_MOTION" && motion_args+=(--enable-motion)
+launch_is_enabled "$ASYNC_INFERENCE" && async_args+=(--async-inference)
+launch_is_enabled "$ASYNC_HOLD_CURRENT_POSE" &&
+  async_hold_args+=(--async-hold-current-pose)
+[[ -n "$TORCH_NUM_THREADS" ]] &&
+  threads_args+=(--torch-num-threads "$TORCH_NUM_THREADS")
+[[ -n "$TARGET_SMOOTHER_DT_CAP" ]] &&
+  target_dt_cap_args+=(--target-smoother-dt-cap "$TARGET_SMOOTHER_DT_CAP")
+launch_is_enabled "$GRIPPER_ENABLE" && gripper_args+=(--gripper-enable)
+launch_is_enabled "$GRIPPER_MOTION_ENABLE" &&
+  gripper_motion_args+=(--gripper-motion-enable)
+if launch_is_enabled "$GRIPPER_LATCH"; then
+  gripper_latch_args+=(
     --gripper-latch
     --gripper-latch-close-threshold "$GRIPPER_LATCH_CLOSE_THRESHOLD"
     --gripper-latch-open-threshold "$GRIPPER_LATCH_OPEN_THRESHOLD"
@@ -160,116 +243,94 @@ if [[ "$GRIPPER_LATCH" == "1" ]]; then
     --gripper-latch-open-command "$GRIPPER_LATCH_OPEN_COMMAND"
   )
 fi
-
-gripper_quantize_arg=()
-if [[ "$GRIPPER_QUANTIZE" == "1" ]]; then
-  gripper_quantize_values=(${=GRIPPER_QUANTIZE_VALUES})
-  gripper_quantize_arg+=(
+if launch_is_enabled "$GRIPPER_QUANTIZE"; then
+  gripper_quantize_args+=(
     --gripper-quantize
     --gripper-quantize-values "${gripper_quantize_values[@]}"
   )
-  if [[ -n "$GRIPPER_QUANTIZE_THRESHOLDS" ]]; then
-    gripper_quantize_thresholds=(${=GRIPPER_QUANTIZE_THRESHOLDS})
-    gripper_quantize_arg+=(
+  if (( ${#gripper_quantize_thresholds[@]} > 0 )); then
+    gripper_quantize_args+=(
       --gripper-quantize-thresholds "${gripper_quantize_thresholds[@]}"
     )
   fi
 fi
-
-debug_timing_arg=()
-if [[ "$DEBUG_TIMING" == "1" ]]; then
-  debug_timing_arg+=(--debug-timing)
-fi
-
-verbose_plan_arg=()
-if [[ "$VERBOSE_PLAN" == "1" ]]; then
-  verbose_plan_arg+=(--verbose-plan)
-fi
-
-debug_gripper_plan_arg=()
-if [[ "$DEBUG_GRIPPER_PLAN" == "1" ]]; then
-  debug_gripper_plan_arg+=(--debug-gripper-plan)
-fi
-
-show_cameras_arg=()
-if [[ "$SHOW_CAMERAS" == "1" ]]; then
-  show_cameras_arg+=(
+launch_is_enabled "$DEBUG_TIMING" && debug_timing_args+=(--debug-timing)
+launch_is_enabled "$VERBOSE_PLAN" && verbose_plan_args+=(--verbose-plan)
+launch_is_enabled "$DEBUG_GRIPPER_PLAN" &&
+  debug_gripper_plan_args+=(--debug-gripper-plan)
+if launch_is_enabled "$SHOW_CAMERAS"; then
+  show_cameras_args+=(
     --show-cameras
     --camera-display-period "$CAMERA_DISPLAY_PERIOD"
     --camera-display-scale "$CAMERA_DISPLAY_SCALE"
   )
 fi
+launch_is_enabled "$IGNORE_ACTION_ORIENTATION" &&
+  ignore_orientation_args+=(--ignore-action-orientation)
+launch_is_enabled "$NO_ADVANCED_CONFIG" && advanced_args+=(--no-advanced-config)
 
-ignore_orientation_arg=()
-if [[ "$IGNORE_ACTION_ORIENTATION" == "1" ]]; then
-  ignore_orientation_arg+=(--ignore-action-orientation)
-fi
-
-advanced_arg=()
-if [[ "$NO_ADVANCED_CONFIG" == "1" ]]; then
-  advanced_arg+=(--no-advanced-config)
-fi
-
-top_crop=(${=TOP_CROP})
-wrist_crop=(${=WRIST_CROP})
-tcp_offset=(${=TCP_OFFSET})
-
-/home/luca/venvs/mujoco_ros/bin/python \
-  -m ur10_real_robot.policy_exec.run_diffusion_real \
-  --checkpoint "$CHECKPOINT" \
-  --backend "$BACKEND" \
-  --robot-ip "$ROBOT_IP" \
-  ${motion_arg[@]} \
-  --device "$DEVICE" \
-  --camera-mode "$CAMERA_MODE" \
-  --top-serial "$TOP_SERIAL" \
-  --wrist-serial "$WRIST_SERIAL" \
-  --top-camera-config "$TOP_CAMERA_CONFIG" \
-  --wrist-camera-config "$WRIST_CAMERA_CONFIG" \
-  ${advanced_arg[@]} \
-  --top-crop "${top_crop[@]}" \
-  --wrist-crop "${wrist_crop[@]}" \
-  --dataset-width "$DATASET_WIDTH" \
-  --dataset-height "$DATASET_HEIGHT" \
-  --tcp-offset "${tcp_offset[@]}" \
-  --base-rz-deg "$BASE_RZ_DEG" \
-  --control-hz "$CONTROL_HZ" \
-  --policy-hz "$POLICY_HZ" \
-  --exec-horizon "$EXEC_HORIZON" \
-  --num-inference-steps "$NUM_INFERENCE_STEPS" \
-  ${threads_arg[@]} \
-  ${async_arg[@]} \
-  ${async_hold_arg[@]} \
-  --kp-pos "$KP_POS" \
-  --kp-rot "$KP_ROT" \
-  --max-joint-vel "$MAX_JOINT_VEL" \
-  --max-target-speed "$MAX_TARGET_SPEED" \
-  --max-pos-error-stop "$MAX_POS_ERROR_STOP" \
-  --max-rot-error-stop "$MAX_ROT_ERROR_STOP" \
-  --loop-watchdog-warn-factor "$LOOP_WATCHDOG_WARN_FACTOR" \
-  --loop-watchdog-stop-factor "$LOOP_WATCHDOG_STOP_FACTOR" \
-  ${target_dt_cap_arg[@]} \
-  --alpha-dq "$ALPHA_DQ" \
-  --speedj-a "$SPEEDJ_A" \
-  --smooth-alpha-pos "$SMOOTH_ALPHA_POS" \
-  --smooth-alpha-rot "$SMOOTH_ALPHA_ROT" \
-  --smooth-alpha-gripper "$SMOOTH_ALPHA_GRIPPER" \
-  ${gripper_arg[@]} \
-  ${gripper_motion_arg[@]} \
-  --gripper-ip "$GRIPPER_IP" \
-  --gripper-port "$GRIPPER_PORT" \
-  --gripper-open-width-mm "$GRIPPER_OPEN_WIDTH_MM" \
-  --initial-gripper-width-mm "$INITIAL_GRIPPER_WIDTH_MM" \
-  --gripper-close-width-mm "$GRIPPER_CLOSE_WIDTH_MM" \
-  --gripper-force-n "$GRIPPER_FORCE_N" \
-  --gripper-command-period "$GRIPPER_COMMAND_PERIOD" \
-  --gripper-deadband-mm "$GRIPPER_DEADBAND_MM" \
-  ${gripper_latch_arg[@]} \
-  ${gripper_quantize_arg[@]} \
-  --max-run-time "$MAX_RUN_TIME" \
-  --print-period "$PRINT_PERIOD" \
-  ${debug_timing_arg[@]} \
-  ${verbose_plan_arg[@]} \
-  ${debug_gripper_plan_arg[@]} \
-  ${show_cameras_arg[@]} \
-  ${ignore_orientation_arg[@]}
+cd "$PROJECT_ROOT"
+policy_command=(
+  "$PYTHON_BIN"
+  -m
+  ur10_real_robot.policy_exec.run_diffusion_real
+  --checkpoint "$CHECKPOINT"
+  --backend "$BACKEND"
+  --robot-ip "$ROBOT_IP"
+  "${motion_args[@]}"
+  --device "$DEVICE"
+  --camera-mode "$CAMERA_MODE"
+  --top-serial "$TOP_SERIAL"
+  --wrist-serial "$WRIST_SERIAL"
+  --top-camera-config "$TOP_CAMERA_CONFIG"
+  --wrist-camera-config "$WRIST_CAMERA_CONFIG"
+  "${advanced_args[@]}"
+  --top-crop "${top_crop[@]}"
+  --wrist-crop "${wrist_crop[@]}"
+  --dataset-width "$DATASET_WIDTH"
+  --dataset-height "$DATASET_HEIGHT"
+  --urdf "$URDF"
+  --tcp-offset "${tcp_offset[@]}"
+  --base-rz-deg "$BASE_RZ_DEG"
+  --control-hz "$CONTROL_HZ"
+  --policy-hz "$POLICY_HZ"
+  --exec-horizon "$EXEC_HORIZON"
+  --num-inference-steps "$NUM_INFERENCE_STEPS"
+  "${threads_args[@]}"
+  "${async_args[@]}"
+  "${async_hold_args[@]}"
+  --kp-pos "$KP_POS"
+  --kp-rot "$KP_ROT"
+  --max-joint-vel "$MAX_JOINT_VEL"
+  --max-target-speed "$MAX_TARGET_SPEED"
+  --max-pos-error-stop "$MAX_POS_ERROR_STOP"
+  --max-rot-error-stop "$MAX_ROT_ERROR_STOP"
+  --loop-watchdog-warn-factor "$LOOP_WATCHDOG_WARN_FACTOR"
+  --loop-watchdog-stop-factor "$LOOP_WATCHDOG_STOP_FACTOR"
+  "${target_dt_cap_args[@]}"
+  --alpha-dq "$ALPHA_DQ"
+  --speedj-a "$SPEEDJ_A"
+  --smooth-alpha-pos "$SMOOTH_ALPHA_POS"
+  --smooth-alpha-rot "$SMOOTH_ALPHA_ROT"
+  --smooth-alpha-gripper "$SMOOTH_ALPHA_GRIPPER"
+  "${gripper_args[@]}"
+  "${gripper_motion_args[@]}"
+  --gripper-ip "$GRIPPER_IP"
+  --gripper-port "$GRIPPER_PORT"
+  --gripper-open-width-mm "$GRIPPER_OPEN_WIDTH_MM"
+  --initial-gripper-width-mm "$INITIAL_GRIPPER_WIDTH_MM"
+  --gripper-close-width-mm "$GRIPPER_CLOSE_WIDTH_MM"
+  --gripper-force-n "$GRIPPER_FORCE_N"
+  --gripper-command-period "$GRIPPER_COMMAND_PERIOD"
+  --gripper-deadband-mm "$GRIPPER_DEADBAND_MM"
+  "${gripper_latch_args[@]}"
+  "${gripper_quantize_args[@]}"
+  --max-run-time "$MAX_RUN_TIME"
+  --print-period "$PRINT_PERIOD"
+  "${debug_timing_args[@]}"
+  "${verbose_plan_args[@]}"
+  "${debug_gripper_plan_args[@]}"
+  "${show_cameras_args[@]}"
+  "${ignore_orientation_args[@]}"
+)
+"${policy_command[@]}"

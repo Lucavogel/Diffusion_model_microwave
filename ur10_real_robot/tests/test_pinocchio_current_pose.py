@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import math
 import os
+from pathlib import Path
 
 import numpy as np
 
@@ -12,9 +13,10 @@ from ur10_real_robot.backends.ur10_rtde import UR10RealtimeSession
 
 
 ROBOT_IP = os.environ.get("ROBOT_IP", "192.168.2.100")
-URDF_PATH = (
-    "/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/"
-    "dp_mujoco/models/universal_robots_ur10e/ur10_d455_support_rg2ft_fixed_gripper.urdf"
+REPO_ROOT = Path(__file__).resolve().parents[2]
+URDF_PATH = str(
+    REPO_ROOT
+    / "dp_mujoco/models/universal_robots_ur10e/ur10_d455_support_rg2ft_fixed_gripper.urdf"
 )
 
 

@@ -9,7 +9,7 @@ ros2_WS/src/Universal_Robots_ROS2_Description/
 /build/
 /install/
 /log/
-
+/docs/
 # diffusion_policy/
 
 # Fichiers Python

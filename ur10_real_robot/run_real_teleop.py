@@ -29,76 +29,30 @@ from ur10_real_robot.teleop.real_episode_recorder import RealEpisodeRecorder
 from ur10_real_robot.safety.safety_config import SafetyConfig, SafetyChecker
 from ur10_real_robot.safety.watchdog import ControlLoopWatchdog, TouchTargetWatchdog
 
-"""
-Bench mark 1 
-cd /home/luca/Stage_Lirmm/Diffusion-model-isaacsim
-
-ROBOT_IP=192.168.2.100 REAL_BACKEND=speedj ENABLE_MOTION=1 \
-TCP_OFFSET="0 0 0.022" \
-GRIPPER_ENABLE=1 GRIPPER_MOTION_ENABLE=1 \
-GRIPPER_CONTROL_MODE=button \
-GRIPPER_OPEN_WIDTH_MM=85 GRIPPER_CLOSE_WIDTH_MM=30 GRIPPER_FORCE_N=8 \
-CAMERA_ENABLE=1 SHOW_CAMERAS=1 RECORD_ENABLE=1 \
-NO_ADVANCED_CONFIG=0 \
-TOP_SERIAL=332322072359 WRIST_SERIAL=043422251624 \
-TOP_CAMERA_CONFIG="/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/camera/config/d435_config_dataset.json" \
-WRIST_CAMERA_CONFIG="/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/camera/config/d455_config_dataset.json" \
-TOP_CROP="40 30 560 420" \
-WRIST_CROP="0 0 640 480" \
-DATASET_WIDTH=320 DATASET_HEIGHT=240 RECORD_FREQ=10 \
-MIN_EPISODE_STEPS=5 \
-TOUCH_AXIS_MAP=swap_xy_neg_y \
-TOUCH_ROT_MAP=same_as_position TOUCH_ROT_APPLY=world TOUCH_ROT_METHOD=matrix \
-KP_POS=0.40 KP_ROT=0.20 \
-MAX_JOINT_VEL=0.10 \
-POSITION_SCALE=0.50 MAX_TARGET_SPEED=0.08 \     
-
-/home/luca/venvs/mujoco_ros/bin/python \
-  -m ur10_real_robot.policy_exec.run_diffusion_real \
-  --checkpoint data/checkpoints/first_real_model.ckpt \
-  --backend speedj \
-  --robot-ip 192.168.2.100 \
-  --enable-motion \
-  --camera-mode realsense \
-  --top-serial 332322072359 \
-  --wrist-serial 043422251624 \
-  --top-camera-config ur10_real_robot/camera/config/d435_config_dataset.json \
-  --wrist-camera-config ur10_real_robot/camera/config/d455_config_dataset.json \
-  --top-crop 40 30 560 420 \
-  --wrist-crop 0 0 640 480 \
-  --tcp-offset 0 0 0.022 \
-  --policy-hz 0.2 \
-  --exec-horizon 1 \
-  --kp-pos 0.45 \
-  --kp-rot 0.0 \
-  --max-joint-vel 0.08 \
-  --max-target-speed 0.04 \
-  --alpha-dq 0.04 \
-  --speedj-a 0.04 \
-  --debug-timing \
-
-
-"""
-
-
-
-
-
-URDF_PATH = (
-    "/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/"
-    "dp_mujoco/models/universal_robots_ur10e/ur10_d455_support_rg2ft_fixed_gripper.urdf"
+ROOT_DIR = Path(__file__).resolve().parents[1]
+URDF_PATH = str(
+    ROOT_DIR
+    / "dp_mujoco"
+    / "models"
+    / "universal_robots_ur10e"
+    / "ur10_d455_support_rg2ft_fixed_gripper.urdf"
 )
-CAMERA_CONFIG_PATH = (
-    "/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/"
-    "ur10_real_robot/camera/config/d435i_config.json"
+CAMERA_CONFIG_PATH = str(
+    ROOT_DIR / "ur10_real_robot" / "camera" / "config" / "d435i_config.json"
 )
-TOP_CAMERA_CONFIG_PATH = (
-    "/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/"
-    "ur10_real_robot/camera/config/d435_config_dataset.json"
+TOP_CAMERA_CONFIG_PATH = str(
+    ROOT_DIR
+    / "ur10_real_robot"
+    / "camera"
+    / "config"
+    / "d435_config_dataset.json"
 )
-WRIST_CAMERA_CONFIG_PATH = (
-    "/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/"
-    "ur10_real_robot/camera/config/d455_config_dataset.json"
+WRIST_CAMERA_CONFIG_PATH = str(
+    ROOT_DIR
+    / "ur10_real_robot"
+    / "camera"
+    / "config"
+    / "d455_config_dataset.json"
 )
 
 
@@ -113,6 +67,32 @@ def rotz(angle: float) -> np.ndarray:
         ],
         dtype=np.float64,
     )
+
+
+def confirm_physical_motion(args: argparse.Namespace) -> bool:
+    """Require an explicit confirmation for every physical actuator path."""
+    arm_motion = args.backend == "speedj" and args.enable_motion
+    gripper_motion = args.gripper_enable and args.gripper_motion_enable
+    if not (arm_motion or gripper_motion):
+        return True
+
+    actuators = []
+    if arm_motion:
+        actuators.append("UR10 arm")
+    if gripper_motion:
+        actuators.append("OnRobot gripper")
+
+    print("-------------------------------------------")
+    print("WARNING: REAL TELEOPERATION")
+    print("-------------------------------------------")
+    print(f"Physical motion enabled for: {', '.join(actuators)}")
+    print("Set the teach-pendant speed slider low and keep the E-stop reachable.")
+    print("-------------------------------------------")
+    answer = input("Type YES to allow physical motion: ")
+    if answer.strip() != "YES":
+        print("Physical motion was not confirmed. Exiting.")
+        return False
+    return True
 
 
 def ros_spin_thread(node: Node) -> None:
@@ -675,6 +655,9 @@ def draw_camera_overlay(
 def main() -> None:
     args = build_parser().parse_args()
 
+    if not confirm_physical_motion(args):
+        return
+
     control_hz = float(args.control_hz)
     control_dt = 1.0 / control_hz
 
@@ -824,12 +807,10 @@ def main() -> None:
             home_q=q_current,
             ee_frame_name="tool0",
             tcp_offset_pos=np.array(args.tcp_offset, dtype=np.float64),
-
-            # Important :
-            # Sur robot réel, pas de socle MuJoCo à z=0.4.
+            # The real controller base is the UR base frame; unlike the MuJoCo
+            # scene, it has no artificial vertical scene offset.
             base_offset_pos=np.array([0.0, 0.0, 0.0], dtype=np.float64),
             base_offset_rot=rotz(math.radians(args.base_rz_deg)),
-
             kp_pos=args.kp_pos,
             kp_rot=args.kp_rot,
             damping=args.damping,
@@ -837,8 +818,7 @@ def main() -> None:
             alpha_dq=args.alpha_dq,
         )
 
-        # Optionnel pour que les backends puissent retourner eef_pos/eef_quat
-        # calculés avec le même modèle Pinocchio que le contrôleur.
+        # Share one kinematic model between control and recorded robot state.
         robot.kinematics = servo.kin
 
         current_tcp_pos, current_tcp_rot, _ = servo.kin.forward_and_jacobian(q_current)
@@ -861,7 +841,7 @@ def main() -> None:
             print(f"speedj t       : {robot.speedj_t:.4f} s")
             print(f"stopj decel    : {args.stop_deceleration}")
         else:
-            print("Motion         : aucun vrai robot commandé")
+            print("Motion         : no physical robot commands")
         print(f"Control Hz     : {control_hz}")
         print(f"Control dt     : {control_dt:.4f} s")
         print(f"URDF           : {args.urdf}")

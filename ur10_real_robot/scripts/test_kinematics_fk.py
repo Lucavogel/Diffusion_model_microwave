@@ -2,16 +2,15 @@
 from __future__ import annotations
 
 import argparse
+from pathlib import Path
 import numpy as np
 
 from dp_mujoco.kinematics.ur10_pinocchio_kinematics import UR10PinocchioKinematics
 from ur10_real_robot.backends.fake_robot_backend import FakeRobotBackend
 
 
-URDF_PATH = (
-    "/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/"
-    "dp_mujoco/models/universal_robots_ur10e/ur10.urdf"
-)
+REPO_ROOT = Path(__file__).resolve().parents[2]
+URDF_PATH = str(REPO_ROOT / "dp_mujoco/models/universal_robots_ur10e/ur10.urdf")
 
 
 def rot_to_quat_wxyz(R: np.ndarray) -> np.ndarray:

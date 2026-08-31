@@ -1,37 +1,60 @@
-#!/bin/zsh
-# Script pour lancer toute la stack Mujoco + Touch 3D + ROS2
+#!/usr/bin/env bash
+set -Eeuo pipefail
 
-# Terminal 1 : Simulation Mujoco (téléop)
+# Start MuJoCo teleoperation and the 3D Systems Touch input in one terminal.
+# The launcher is location-independent: it derives every path from this file.
 
-(gnome-terminal -- zsh -c '
-source /opt/ros/humble/setup.zsh
-source ~/venvs/mujoco_ros/bin/activate
-cd /home/luca/Stage_Lirmm/Diffusion-model-isaacsim
-python -m dp_mujoco.teleop.test_UR10e_touch
-status=$?
-echo ""
-echo "[simu] process exited with status $status"
-echo "Press Enter to close this terminal..."
-read
-') &
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="${PROJECT_ROOT:-$SCRIPT_DIR}"
+export PROJECT_ROOT
 
-# Terminal 2 : ROS2 + Touch driver + RViz
+show_help() {
+  cat <<'EOF'
+Usage: ./launch_all.sh
 
-(gnome-terminal -- zsh -c '
-source /opt/ros/humble/setup.zsh
-source ~/venvs/mujoco_ros/bin/activate
-cd /home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ros2_WS
-colcon build 
-source install/setup.zsh
-cd /home/luca/Stage_Lirmm/Diffusion-model-isaacsim
-ros2 launch touch_ros2_driver touch_rviz.launch.py
-status=$?
-echo ""
-echo "[ros2] process exited with status $status"
-echo "Press Enter to close this terminal..."
-read
-') &
+Starts the Touch ROS 2 driver, waits for /touch/pose, then starts MuJoCo
+teleoperation. Press Ctrl+C in this terminal to stop both processes.
 
+Optional environment variables:
+  CONDA_ENV_NAME=microwave_dp  Conda environment used when none is active
+  PYTHON_BIN=/path/to/python   Explicit Python interpreter
+  TOUCH_BUILD=auto             auto, 1 (always build), or 0 (never build)
+  START_TOUCH_DRIVER=1         Set to 0 when a Touch node already runs
+  TOUCH_START_TIMEOUT=15       Startup timeout in seconds
+  TOUCH_LOG_FILE=/tmp/file.log Touch driver log file
 
+The Touch must be plugged in, its vendor driver/OpenHaptics must be installed,
+and OPENHAPTICS_ROOT must be set for the first ROS 2 workspace build. See
+README_ENV.md.
+EOF
+}
 
-wait
+if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+  show_help
+  exit 0
+fi
+(( $# == 0 )) || { show_help >&2; exit 2; }
+
+# shellcheck source=scripts/lib/launch_common.sh
+source "$PROJECT_ROOT/scripts/lib/launch_common.sh"
+
+launch_select_python
+launch_source_ros2
+launch_prepare_touch_workspace
+launch_require_file \
+  "$PROJECT_ROOT/dp_mujoco/models/universal_robots_ur10e/scene_microwave_camera.xml" \
+  "MuJoCo scene"
+launch_require_file \
+  "$PROJECT_ROOT/dp_mujoco/models/universal_robots_ur10e/ur10_d455_support_rg2ft_fixed_gripper.urdf" \
+  "UR10 URDF"
+launch_require_python_modules numpy cv2 mujoco rclpy pinocchio diffusion_policy
+
+cleanup() {
+  launch_stop_touch_driver
+}
+trap cleanup EXIT INT TERM
+
+launch_start_touch_driver
+launch_info "Starting MuJoCo teleoperation. Press Ctrl+C to stop."
+cd "$PROJECT_ROOT"
+"$PYTHON_BIN" -m dp_mujoco.teleop.test_UR10e_touch

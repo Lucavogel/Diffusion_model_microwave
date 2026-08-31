@@ -5,7 +5,7 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
-# 1. Trouver les dépendances ROS 2
+# ROS 2 dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(geometry_msgs REQUIRED)
@@ -17,12 +17,44 @@ find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 
-include_directories(/home/luca/Master/openhaptics_3.4-0-developer-edition-amd64/usr/include)
+set(OPENHAPTICS_ROOT "" CACHE PATH
+  "OpenHaptics SDK root containing usr/include and usr/lib")
+if(NOT OPENHAPTICS_ROOT AND DEFINED ENV{OPENHAPTICS_ROOT})
+  set(OPENHAPTICS_ROOT "$ENV{OPENHAPTICS_ROOT}")
+endif()
 
-# Chemin vers les librairies
-link_directories(/home/luca/Master/openhaptics_3.4-0-developer-edition-amd64/usr/lib)
+find_path(OPENHAPTICS_INCLUDE_DIR
+  NAMES HD/hd.h
+  PATHS
+    "${OPENHAPTICS_ROOT}/usr/include"
+    "${OPENHAPTICS_ROOT}/include"
+  NO_DEFAULT_PATH
+)
+find_library(OPENHAPTICS_HD_LIBRARY
+  NAMES HD
+  PATHS "${OPENHAPTICS_ROOT}/usr/lib" "${OPENHAPTICS_ROOT}/lib"
+  NO_DEFAULT_PATH
+)
+find_library(OPENHAPTICS_HL_LIBRARY
+  NAMES HL
+  PATHS "${OPENHAPTICS_ROOT}/usr/lib" "${OPENHAPTICS_ROOT}/lib"
+  NO_DEFAULT_PATH
+)
+find_library(OPENHAPTICS_HDU_LIBRARY
+  NAMES HDU
+  PATHS "${OPENHAPTICS_ROOT}/usr/lib" "${OPENHAPTICS_ROOT}/lib"
+  NO_DEFAULT_PATH
+)
 
-# Premier exécutable
+if(NOT OPENHAPTICS_INCLUDE_DIR OR
+   NOT OPENHAPTICS_HD_LIBRARY OR
+   NOT OPENHAPTICS_HL_LIBRARY OR
+   NOT OPENHAPTICS_HDU_LIBRARY)
+  message(FATAL_ERROR
+    "OpenHaptics 3.4 was not found. Set OPENHAPTICS_ROOT to the SDK "
+    "directory containing usr/include/HD/hd.h and usr/lib/libHD.so.")
+endif()
+
 add_executable(touch_node src/touch_node.cpp)
 ament_target_dependencies(touch_node 
   rclcpp 
@@ -32,7 +64,6 @@ ament_target_dependencies(touch_node
   tf2_ros
 )
 
-# Deuxième exécutable (nom différent)
 add_executable(orientation_test_node src/orientation_test.cpp)
 ament_target_dependencies(orientation_test_node 
   rclcpp 
@@ -43,26 +74,20 @@ ament_target_dependencies(orientation_test_node
 )
 
 
-target_link_libraries(touch_node 
-    /home/luca/Master/openhaptics_3.4-0-developer-edition-amd64/usr/lib/libHD.so
-    /home/luca/Master/openhaptics_3.4-0-developer-edition-amd64/usr/lib/libHL.so
-    /home/luca/Master/openhaptics_3.4-0-developer-edition-amd64/usr/lib/libHDU.a
-    rt 
+foreach(touch_target touch_node orientation_test_node)
+  target_include_directories(${touch_target} PRIVATE ${OPENHAPTICS_INCLUDE_DIR})
+  target_link_libraries(${touch_target}
+    ${OPENHAPTICS_HD_LIBRARY}
+    ${OPENHAPTICS_HL_LIBRARY}
+    ${OPENHAPTICS_HDU_LIBRARY}
+    rt
     pthread
-)
-
-# Faire la même chose pour le 2ème noeud
-target_link_libraries(orientation_test_node 
-    /home/luca/Master/openhaptics_3.4-0-developer-edition-amd64/usr/lib/libHD.so
-    /home/luca/Master/openhaptics_3.4-0-developer-edition-amd64/usr/lib/libHL.so
-    /home/luca/Master/openhaptics_3.4-0-developer-edition-amd64/usr/lib/libHDU.a
-    rt 
-    pthread
-)
+  )
+endforeach()
 
 install(TARGETS
   touch_node
-  orientation_test_node # <-- Ajouté ici
+  orientation_test_node
   DESTINATION lib/${PROJECT_NAME}
 )
 

@@ -1,3 +1,4 @@
+# LEGACY FILE: new installations must use environment_local.yml.
 name: robodiff_sim
 channels:
   - pytorch

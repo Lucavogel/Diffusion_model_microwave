@@ -16,17 +16,13 @@ from ur10_real_robot.teleop.real_dataset_writer import (
 from ur10_real_robot.teleop.real_episode_recorder import RealEpisodeRecorder
 
 
-CONFIG_PATH = (
-    "/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/"
-    "ur10_real_robot/camera/config/d435i_config.json"
+REPO_ROOT = Path(__file__).resolve().parents[2]
+CONFIG_PATH = str(REPO_ROOT / "ur10_real_robot/camera/config/d435i_config.json")
+TOP_CONFIG_PATH = str(
+    REPO_ROOT / "ur10_real_robot/camera/config/d435_config_dataset.json"
 )
-TOP_CONFIG_PATH = (
-    "/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/"
-    "ur10_real_robot/camera/config/d435_config_dataset.json"
-)
-WRIST_CONFIG_PATH = (
-    "/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/"
-    "ur10_real_robot/camera/config/d455_config_dataset.json"
+WRIST_CONFIG_PATH = str(
+    REPO_ROOT / "ur10_real_robot/camera/config/d455_config_dataset.json"
 )
 
 

@@ -4,9 +4,11 @@ import numpy as np
 import cv2
 import json
 import time
+from pathlib import Path
 
 
-CONFIG_PATH = "/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/camera/config/d435i_config.json"
+REPO_ROOT = Path(__file__).resolve().parents[2]
+CONFIG_PATH = REPO_ROOT / "ur10_real_robot/camera/config/d435i_config.json"
 
 def get_first_realsense_device():
     ctx = rs.context()

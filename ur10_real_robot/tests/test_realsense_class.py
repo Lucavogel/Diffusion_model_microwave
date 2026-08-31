@@ -1,9 +1,11 @@
 from ur10_real_robot.camera import RealSenseCamera
 
 import cv2
+from pathlib import Path
 
 
-CONFIG_PATH = "/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/ur10_real_robot/camera/config/d435i_config.json"
+REPO_ROOT = Path(__file__).resolve().parents[2]
+CONFIG_PATH = REPO_ROOT / "ur10_real_robot/camera/config/d435i_config.json"
 SERIAL_NUMBER_TOP_DOWN = "332322072359"
 SERIAL_NUMBER_FRONT = "043422251624"
 
@@ -11,7 +13,7 @@ SERIAL_NUMBER_FRONT = "043422251624"
 def main() -> None:
 
     top_down_camera = RealSenseCamera(
-        config_path=CONFIG_PATH,
+        config_path=str(CONFIG_PATH),
         width=640,
         height=480,
         fps=30,

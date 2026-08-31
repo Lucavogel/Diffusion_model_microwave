@@ -309,16 +309,24 @@ def main() -> None:
     if args.policy_hz <= 0.0:
         raise ValueError("--policy-hz must be positive.")
 
-    if args.backend == "speedj" and args.enable_motion:
+    arm_motion = args.backend == "speedj" and args.enable_motion
+    gripper_motion = args.gripper_enable and args.gripper_motion_enable
+    if arm_motion or gripper_motion:
+        actuators = []
+        if arm_motion:
+            actuators.append("UR10 arm")
+        if gripper_motion:
+            actuators.append("OnRobot gripper")
         print("-------------------------------------------")
         print("ATTENTION: REAL DIFFUSION EXECUTION")
         print("-------------------------------------------")
-        print("This can move the real robot from policy outputs.")
+        print(f"Physical motion enabled for: {', '.join(actuators)}")
+        print("Policy outputs can move these actuators.")
         print("Start with speed slider low and hand near E-stop.")
         print("-------------------------------------------")
-        answer = input("Tape YES pour lancer avec mouvement réel : ")
+        answer = input("Type YES to allow physical motion: ")
         if answer.strip() != "YES":
-            print("Annulé.")
+            print("Physical motion was not confirmed. Exiting.")
             return
 
     device = torch.device(args.device)

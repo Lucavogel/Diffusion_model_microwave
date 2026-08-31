@@ -3,7 +3,8 @@ import cv2
 import mujoco
 import numpy as np
 
-MODEL_PATH = Path("/home/luca/Stage_Lirmm/Diffusion-model-isaacsim/mujoco/models/universal_robots_ur10e/scene_custom.xml")
+REPO_ROOT = Path(__file__).resolve().parents[2]
+MODEL_PATH = REPO_ROOT / "dp_mujoco/models/universal_robots_ur10e/scene_custom.xml"
 
 WIDTH = 640
 HEIGHT = 480
