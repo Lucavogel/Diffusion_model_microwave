@@ -134,7 +134,8 @@ The username does not need to be `luca`.
 ```bash
 mkdir -p "$HOME/Stage_Lirmm"
 cd "$HOME/Stage_Lirmm"
-git clone https://github.com/Lucavogel/Diffusion-model-isaacsim.git
+git clone https://github.com/Lucavogel/Diffusion_model_microwave.git \
+  Diffusion-model-isaacsim
 cd Diffusion-model-isaacsim
 git switch main
 ```
