@@ -98,6 +98,7 @@ The main entry points are:
 
 | Program | What it starts |
 |---|---|
+| `python dp_mujoco/examples/mujoco_basics.py --viewer` | Minimal MuJoCo tutorial scene and control loop |
 | `./launch_all.sh` | MuJoCo teleoperation and the Touch ROS 2 node |
 | `./ur10_real_robot/run_teleop.sh` | Real-robot teleoperation and recording |
 | `diffusion_policy/train.py` | Diffusion Policy training |

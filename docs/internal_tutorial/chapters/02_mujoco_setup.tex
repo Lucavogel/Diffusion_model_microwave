@@ -1,164 +1,267 @@
-\section{Build a Useful MuJoCo Benchmark}
-\label{chap:mujoco}
+\section{What MuJoCo Executes}
+\label{sec:mujoco-concepts}
 
-Simulation is most useful as an engineering instrument: it allows the task,
-controller, observations, recording format, and policy runner to be tested
-without risking hardware. It should be sufficiently representative to exercise
-the interfaces, but it does not need to reproduce every physical detail before
-the first experiment.
+MuJoCo is a physics engine for articulated systems, contacts, and rigid-body
+dynamics. A typical program has four steps:
 
-\subsection{Start from the experimental question}
+\begin{center}
+\begin{tikzpicture}[
+  node distance=8mm and 8mm,
+  box/.style={draw=lirmmblue,rounded corners=1mm,thick,align=center,
+              minimum height=10mm,minimum width=29mm,fill=softblue},
+  arr/.style={-{Latex[length=2.2mm]},thick,lirmmblue}
+]
+  \node[box] (xml) {MJCF/XML\\scene};
+  \node[box,right=of xml] (model) {Compile to\\\filepath{MjModel}};
+  \node[box,right=of model] (data) {Create\\\filepath{MjData}};
+  \node[box,right=of data] (step) {Set control and\\call \filepath{mj_step}};
+  \draw[arr] (xml) -- (model);
+  \draw[arr] (model) -- (data);
+  \draw[arr] (data) -- (step);
+\end{tikzpicture}
+\end{center}
 
-Before editing XML, decide whether the simulator must validate reachability,
-camera information, teleoperation, data recording, or a complete policy
-rollout. Add contact detail, textures, and dynamics only when they represent a
-task requirement or explain a measured mismatch.
-
-\subsection{The MuJoCo concepts that matter in practice}
-
-MuJoCo describes the fixed system in MJCF/XML and stores the evolving state in
-\filepath{MjData} \citep{todorov2012mujoco}. Keep the following distinction in
-mind:
+The distinction between model and data is fundamental:
 
 \begin{description}
-  \item[Model:] bodies, joints, masses, geometry, cameras, actuators, and limits.
-  \item[Data:] joint state, control input, object pose, contact state, and time.
-  \item[Forward computation:] recomputes kinematics after directly changing state.
-  \item[Simulation step:] advances dynamics by one time step.
+  \item[\filepath{mujoco.MjModel}:] the compiled, mostly fixed description of
+  bodies, joints, masses, geometry, cameras, actuators, and limits.
+  \item[\filepath{mujoco.MjData}:] the changing state of one simulation,
+  including joint position, velocity, control input, contact information, body
+  pose, and simulation time.
+  \item[\filepath{mujoco.mj_step}:] advances dynamics by one model time step.
+  \item[\filepath{mujoco.mj_forward}:] recomputes derived positions and
+  velocities after state was changed directly, without advancing time.
 \end{description}
 
-To randomize an object's pose at reset, modify the data and call forward
-kinematics. To change its mass or collision shape, modify the model description
-and reload it.
+An XML edit requires the model to be reloaded. In contrast, moving a free object
+at reset normally modifies \filepath{MjData} and then calls
+\filepath{mj_forward}.
 
-\begin{methodbox}[A robust scene-building order]
-Add the robot and a flat workspace first. Then add one primitive object, one
-camera, and one success region. Validate reachability and contacts before adding
-meshes, clutter, or multiple objects. Primitive collision geometry is usually
-more stable than a detailed visual mesh.
-\end{methodbox}
+\section{Run the Minimal Example}
 
-\subsection{Example scene from the internship}
+The repository contains a small example independent of the microwave task:
 
-The project scene is
-\filepath{dp_mujoco/models/universal_robots_ur10e/scene_microwave_camera.xml}.
-It separates scene geometry, robot description, environment access, and reset
-randomization. Keep the same separation in a new project, and ensure collection
-and execution use the same reset distribution.
+\begin{itemize}
+  \item \filepath{dp_mujoco/examples/minimal_scene.xml};
+  \item \filepath{dp_mujoco/examples/mujoco_basics.py}.
+\end{itemize}
 
-Open any new scene before involving teleoperation:
+It contains a floor, light, one actuated hinge, a free cube, a site, and a
+camera. Run it without graphics first:
 
 \begin{lstlisting}[language=bash]
-conda activate microwave_dp
+python dp_mujoco/examples/mujoco_basics.py
+\end{lstlisting}
+
+The output reports the simulation time step and the dimensions \filepath{nq},
+\filepath{nv}, and \filepath{nu}, then prints the changing joint position and
+control target. Open the same example interactively with:
+
+\begin{lstlisting}[language=bash]
+python dp_mujoco/examples/mujoco_basics.py --viewer --duration 10
+\end{lstlisting}
+
+The blue arm follows a sinusoidal target, the green cube falls under gravity,
+and the red site follows the end of the arm. This one scene demonstrates
+actuation, free-body dynamics, contact, and a kinematic reference frame.
+
+\section{Read a Small MJCF Scene}
+
+MJCF describes a hierarchy. Child bodies move with their parent, while joints
+define the motion allowed between them. The important elements are:
+
+\begin{table}[H]
+  \centering
+  \begin{tabularx}{\textwidth}{@{}p{0.20\textwidth}X@{}}
+    \toprule
+    \textbf{Element} & \textbf{Purpose} \\
+    \midrule
+    \filepath{body} & A rigid frame that can contain joints, geometry, sites, and child bodies. \\
+    \filepath{joint} & One degree of freedom such as a hinge or slide. \\
+    \filepath{freejoint} & Six free degrees of freedom, represented by 3D position and a quaternion. \\
+    \filepath{geom} & Visual and/or collision geometry with size, mass, friction, and material. \\
+    \filepath{site} & A massless reference frame used for a TCP, sensor location, or target. \\
+    \filepath{camera} & A fixed or body-mounted viewpoint used by the viewer or renderer. \\
+    \filepath{actuator} & Converts a value in \filepath{data.ctrl} into force, velocity, or position control. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+The core of the tutorial scene is deliberately small:
+
+\begin{lstlisting}[language=XML]
+<body name="arm" pos="0 0 0.08">
+  <joint name="arm_hinge" type="hinge" axis="0 1 0"
+         range="-1.57 1.57"/>
+  <geom type="capsule" fromto="0 0 0 0 0 0.35"
+        size="0.025" mass="0.5"/>
+  <site name="tool_site" pos="0 0 0.35" size="0.015"/>
+</body>
+
+<actuator>
+  <position name="arm_position" joint="arm_hinge" kp="20"/>
+</actuator>
+\end{lstlisting}
+
+The actuator type defines the meaning of \filepath{data.ctrl}. Here the value
+is a desired hinge angle. A motor actuator would interpret it differently, so
+never assume that \filepath{ctrl} always contains joint positions.
+
+MuJoCo uses half-extents for a box \filepath{geom}: a box with
+\filepath{size="0.04 0.04 0.04"} measures $8\times8\times8$~cm. Incorrectly
+treating these values as full dimensions is a common source of collision errors.
+
+\section{Understand the Python Simulation Loop}
+
+The essential Python loop is:
+
+\begin{lstlisting}[language=Python]
+model = mujoco.MjModel.from_xml_path("minimal_scene.xml")
+data = mujoco.MjData(model)
+
+actuator_id = mujoco.mj_name2id(
+    model, mujoco.mjtObj.mjOBJ_ACTUATOR, "arm_position"
+)
+
+while data.time < 4.0:
+    data.ctrl[actuator_id] = target_angle
+    mujoco.mj_step(model, data)
+\end{lstlisting}
+
+The most frequently inspected arrays are:
+
+\begin{description}
+  \item[\filepath{data.qpos}:] generalized positions. A hinge uses one value;
+  a free joint uses seven values: three for position and four for orientation.
+  \item[\filepath{data.qvel}:] generalized velocities. A free joint uses six
+  values, so \filepath{nq} and \filepath{nv} need not be equal.
+  \item[\filepath{data.ctrl}:] one input per actuator; its length is
+  \filepath{model.nu}.
+  \item[\filepath{data.site_xpos/site_xmat}:] world position and orientation of
+  sites after forward kinematics or a simulation step.
+\end{description}
+
+Use names instead of hard-coded indices when possible. The project obtains the
+TCP site in the same way:
+
+\begin{lstlisting}[language=Python]
+site_id = mujoco.mj_name2id(
+    model, mujoco.mjtObj.mjOBJ_SITE, "grasp_site"
+)
+tcp_position = data.site_xpos[site_id].copy()
+\end{lstlisting}
+
+\section{Open the Project Scene}
+\label{sec:mujoco-scene}
+
+The active task scene is:
+
+\begin{center}
+\filepath{dp_mujoco/models/universal_robots_ur10e/scene_microwave_camera.xml}
+\end{center}
+
+The scene includes \filepath{ur10e_with_gripper.xml}; this keeps robot links,
+joints, gripper, actuators, wrist camera, and \filepath{grasp_site} separate
+from the microwave, table, objects, target boxes, lighting, and global camera.
+The Python files around the XML are:
+
+\begin{table}[H]
+  \centering
+  \begin{tabularx}{\textwidth}{@{}p{0.42\textwidth}X@{}}
+    \toprule
+    \textbf{Path} & \textbf{Responsibility} \\
+    \midrule
+    \filepath{dp_mujoco/env/mujoco_env.py} & Loads the scene and exposes state, rendering, reset, and commands. \\
+    \filepath{dp_mujoco/env/scene_utils.py} & Changes object pose during teleoperation resets. \\
+    \filepath{dp_mujoco/utils/scene_utils.py} & Applies the matching reset distribution during policy execution. \\
+    \filepath{dp_mujoco/teleop/test_UR10e_touch.py} & Runs simulated teleoperation and recording. \\
+    \filepath{dp_mujoco/policy_exec/run_diffusion_mujoco.py} & Executes a trained checkpoint in MuJoCo. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+Open the XML without ROS or the Touch:
+
+\begin{lstlisting}[language=bash]
 python -m mujoco.viewer \
   --mjcf=dp_mujoco/models/universal_robots_ur10e/scene_microwave_camera.xml
 \end{lstlisting}
 
-Verify limits, initial overlaps, collision geometry, camera placement, object
-settling, and repeated resets. Rendering without an exception is only the first
-check.
+Inspect the body hierarchy, joint limits, contact geometry, and initial object
+poses. The rendered mesh may look correct even when its collision geometry is
+wrong, so enable contact or geometry visualization when debugging.
 
-\subsection{Design observations before collecting data}
+\section{Separate Visual and Collision Geometry}
 
-Camera choice should follow the task. A global view gives workspace context; a
-wrist view gives detail near contact but can be occluded by the gripper. Render
-exactly the images that the model will receive, including their crop and final
-resolution.
+A detailed mesh is useful for appearance but often unnecessarily difficult for
+contact. In the project scene, the microwave OBJ mesh has collision disabled and
+simple transparent boxes represent its floor, walls, and back. This makes
+contact faster and easier to inspect.
+
+When adding an object, begin with a primitive:
+
+\begin{lstlisting}[language=XML]
+<body name="practice_cube" pos="0.60 0.00 0.48">
+  <freejoint/>
+  <geom type="box" size="0.025 0.025 0.025"
+        mass="0.10" rgba="0.15 0.55 0.90 1"/>
+</body>
+\end{lstlisting}
+
+Reload the XML and let the object settle. If it falls through, jumps, or becomes
+stuck, check units, initial overlap, collision dimensions, mass, friction, and
+contact settings before modifying the robot controller.
+
+\section{Render the Policy Cameras}
+
+The project uses \filepath{top_table} as the global camera and
+\filepath{wrist_cam} as the eye-in-hand camera. A renderer must be updated from
+the latest \filepath{MjData} before an image is read:
+
+\begin{lstlisting}[language=Python]
+renderer = mujoco.Renderer(model, height=480, width=640)
+renderer.update_scene(data, camera="top_table")
+rgb_image = renderer.render()
+\end{lstlisting}
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.86\textwidth]{camera_view.png}
-  \caption{Simulation example: wrist view on the left and global view on the right.}
+  \caption{Project camera observations: wrist view on the left and global view on the right.}
   \label{fig:sim-camera-example}
 \end{figure}
 
-Ask three questions for every camera:
+The teleoperation display uses $640\times480$ images, while its recorder resizes
+them to $84\times84$ for the simulation dataset. Camera name, ordering,
+orientation, and final image size must remain identical during policy execution.
 
-\begin{enumerate}
-  \item Is the relevant object visible before the action decision is required?
-  \item Can the robot or gripper hide it during a critical phase?
-  \item Can approximately the same viewpoint be reproduced on the real setup?
-\end{enumerate}
+\section{Reset and Randomize an Object}
 
-Changing a camera, crop, or resolution after data collection changes the policy
-input distribution. Treat it as an interface change, not a cosmetic edit.
+A free joint stores object position followed by a quaternion in
+\filepath{data.qpos}. The project reset utility finds the free-joint address,
+writes the new pose, clears its six velocity values, and calls
+\filepath{mj_forward}:
 
-\subsection{Add variation progressively}
+\begin{lstlisting}[language=Python]
+qpos_adr = model.jnt_qposadr[joint_id]
+qvel_adr = model.jnt_dofadr[joint_id]
 
-Randomization should represent the uncertainty that the policy is expected to
-handle. Define position and orientation ranges explicitly and sample only
-collision-free states. Test many resets before recording demonstrations.
-
-Useful stages are:
-
-\begin{enumerate}
-  \item fixed object and target positions;
-  \item one-dimensional position variation;
-  \item two-dimensional position variation;
-  \item limited orientation variation;
-  \item appearance, lighting, geometry, or object variation.
-\end{enumerate}
-
-If the policy fails after a new stage, this ordering identifies which added
-uncertainty requires more data or a different observation.
-
-\subsection{Validate the full simulation loop}
-
-\begin{warningbox}[Touch pre-flight before the complete loop]
-\filepath{launch_all.sh} requires a working 3D Systems Touch input path. Before
-starting it, connect the device to the computer, power it when required, and
-confirm that the vendor Touch driver and OpenHaptics are installed. The launcher
-sources the ROS~2 workspace and builds it when generated files are missing; the
-first build still requires a valid \filepath{OPENHAPTICS_ROOT}.
-
-For a first installation, follow \cref{app:openhaptics} and verify
-\filepath{/touch/pose} and \filepath{/touch/buttons} with the standalone ROS~2
-driver before launching the complete teleoperation loop. Stop that standalone
-test before running \filepath{launch_all.sh}, which starts its own Touch node.
-For later sessions, plug in the device before launch and perform the daily
-terminal setup described in \filepath{README_ENV.md}.
-\end{warningbox}
-
-In this project, simulation teleoperation is launched with:
-
-\begin{lstlisting}[language=bash]
-cd "$HOME/Stage_Lirmm/Diffusion-model-isaacsim"
-conda activate microwave_dp
-./launch_all.sh
+data.qpos[qpos_adr:qpos_adr + 3] = position
+data.qpos[qpos_adr + 3:qpos_adr + 7] = quat_wxyz
+data.qvel[qvel_adr:qvel_adr + 6] = 0.0
+mujoco.mj_forward(model, data)
 \end{lstlisting}
 
-The launcher starts the MuJoCo program and the ROS~2 Touch node. Before a large
-collection, record only three episodes and verify:
+The reset distribution used for collection and policy execution must match.
+The current repository has one randomization module for each path; update and
+test both when the pose range changes. Run many resets before recording and
+confirm that every object pose is collision-free, visible, reachable, and part
+of the intended task.
 
-\begin{itemize}
-  \item the robot follows all Cartesian directions correctly;
-  \item reset variation stays inside the protocol;
-  \item both policy images update and have the expected resolution;
-  \item actions and measured robot state evolve continuously;
-  \item episodes can be saved, cancelled, and replayed.
-\end{itemize}
-
-Then train a small or short test run and execute one checkpoint in simulation.
-This smoke test finds interface errors more cheaply than a full training run.
-
-\subsection{Common mistakes and useful improvements}
-
-\begin{longtable}{@{}p{0.30\textwidth}p{0.64\textwidth}@{}}
-  \toprule
-  \textbf{Symptom} & \textbf{First investigation} \\
-  \midrule
-  \endhead
-  Unstable object contact & Check units, initial overlap, collision primitives, mass, and solver settings before changing control gains. \\
-  Black or irrelevant camera & Check camera name, transform, lighting, render update, crop, and final resized image. \\
-  Jump at reset & Clear velocities, apply the complete home/reset function, and recompute forward kinematics. \\
-  Collection and rollout differ & Compare randomization, camera order, quaternion convention, image shape, and action scaling. \\
-  Simulation is too easy & Increase one measured uncertainty at a time rather than adding arbitrary noise everywhere. \\
-  Simulation is too slow & Profile rendering, physics, and policy inference separately; they require different fixes. \\
-  \bottomrule
-\end{longtable}
-
-\begin{checkpointbox}[Ready for demonstration collection]
-The task can be completed repeatedly by teleoperation, every reset is valid,
-the policy observations contain the required information, and a saved episode
-can be replayed without shape or convention ambiguity.
+\begin{checkpointbox}[MuJoCo environment ready]
+The minimal example runs, the project XML opens, the robot and free objects
+behave correctly under gravity and contact, both cameras render useful views,
+and repeated reset samples remain valid. Only then connect the Touch and test
+the complete teleoperation loop.
 \end{checkpointbox}

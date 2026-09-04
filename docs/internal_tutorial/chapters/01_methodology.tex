@@ -1,116 +1,56 @@
-\chapter{From an Idea to a Validated Simulation}
-\label{chap:overview}
+\chapter{MuJoCo Fundamentals}
+\label{chap:simulation}
 
-The internship implementation appears only as a running example. The workflow
-itself applies to behavior cloning, action-chunking models, diffusion-based
-policies, or another vision-conditioned controller.
+This guide follows the shortest useful path through the project: open and
+validate the MuJoCo task, control it with the 3D Systems Touch, record and
+inspect demonstrations, train a policy, and execute the checkpoint. It assumes
+basic knowledge of Python, ROS~2, and robotics. Installation commands are kept
+in \filepath{README_ENV.md}; the complete Touch installation is reproduced in
+\cref{app:openhaptics}.
 
-Use \filepath{README_ENV.md}, \filepath{README_SERVER.md}, and
-\filepath{README_CODE.md} for installation and copyable project commands; this
-guide focuses on the decisions and checks that remain useful across systems.
+MuJoCo reads an XML description of a mechanical system and numerically advances
+its state through time. In this project it provides the UR10, microwave scene,
+contacts, cameras, robot state, and control interface needed to test the full
+learning workflow without moving physical hardware.
 
-\section{The experimental cycle}
+\section{Use the repository guides together}
 
-Most robot-learning projects can be organized as the following loop:
+The documentation is divided by execution context:
 
-\begin{center}
-\resizebox{\textwidth}{!}{%
-\begin{tikzpicture}[
-  node distance=8mm and 7mm,
-  box/.style={draw=lirmmblue,rounded corners=1mm,thick,align=center,
-              minimum height=10mm,minimum width=26mm,fill=softblue},
-  arr/.style={-{Latex[length=2.2mm]},thick,lirmmblue}
-]
-  \node[box] (task) {Define a\\benchmark};
-  \node[box,right=of task] (sim) {Build and test\\in simulation};
-  \node[box,right=of sim] (data) {Collect and\\inspect data};
-  \node[box,right=of data] (train) {Train and select\\a checkpoint};
-  \node[box,right=of train] (deploy) {Deploy and\\evaluate};
-  \draw[arr] (task) -- (sim);
-  \draw[arr] (sim) -- (data);
-  \draw[arr] (data) -- (train);
-  \draw[arr] (train) -- (deploy);
-  \draw[arr] (deploy.south) |- ++(0,-8mm) -| (task.south);
-\end{tikzpicture}%
-}
-\end{center}
+\begin{table}[H]
+  \centering
+  \begin{tabularx}{\textwidth}{@{}p{0.28\textwidth}X@{}}
+    \toprule
+    \textbf{File} & \textbf{Use} \\
+    \midrule
+    \filepath{README_ENV.md} & Install the local Conda, ROS~2, MuJoCo, and Touch environment. \\
+    \filepath{README_CODE.md} & Find maintained launch commands, controls, data tools, and program locations. \\
+    \filepath{README_SERVER.md} & Transfer a dataset, enter the training container, launch training, and recover checkpoints. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
 
-Each stage should produce evidence before the next one starts. A scene that
-loads is not yet a valid benchmark; a dataset that has the expected shape is
-not necessarily useful; a low validation loss is not proof of closed-loop task
-success; and a robot that moves is not yet a safe deployment.
+This PDF explains the order of operations and the checks between them. When a
+copyable command differs from the source code, the corresponding README is the
+authoritative reference.
 
-\begin{methodbox}[General rule]
-Change one source of difficulty at a time. Begin with a task that is easy to
-interpret, then add position, orientation, lighting, object, or geometry
-variation progressively. When several variables change together, a failure is
-hard to diagnose and the next dataset is difficult to design.
-\end{methodbox}
+\section{Activate the local environment}
 
-\section{Define success before writing code}
+From a new terminal:
 
-A benchmark description should answer five questions:
+\begin{lstlisting}[language=bash]
+cd "$HOME/Stage_Lirmm/Diffusion-model-isaacsim"
+conda activate microwave_dp
+python --version
+python -c "import mujoco, numpy, cv2; print('Local environment: OK')"
+\end{lstlisting}
 
-\begin{enumerate}
-  \item What is the initial state distribution?
-  \item What observations are available to the policy?
-  \item What actions can the policy command?
-  \item What event counts as success or failure?
-  \item Which conditions remain fixed during one evaluation?
-\end{enumerate}
+If \filepath{microwave_dp} does not exist, stop and follow
+\filepath{README_ENV.md}. Do not install packages one by one into an unrelated
+environment; the resulting versions may no longer match the project.
 
-Avoid descriptions such as ``the robot should usually grasp the object.'' A
-useful definition is observable: for example, ``the object starts inside a
-marked region and the trial succeeds when it is released inside the target box
-without triggering a safety stop.'' Also define a maximum duration and the
-handling of contacts, re-grasps, human intervention, and sensor failure.
-
-\begin{projectbox}[Internship example]
-The project moved from simulation to a simple physical pick-and-drop task, then
-to constrained extraction with progressively larger pose variation. Each stage
-added one observable difficulty while retaining the same experimental cycle.
-\end{projectbox}
-
-\section{Separate interfaces from implementations}
-
-A learned policy should be treated as one component with a clear contract:
-
-\begin{equation}
-  \text{recent observations} \longrightarrow
-  \text{future action sequence}.
-\end{equation}
-
-The simulator and physical robot do not need the same internal code, but they
-must provide compatible concepts: camera images, robot state, action decoding,
-and timing. Keeping these interfaces explicit makes it possible to replace the
-model architecture or manipulator without rewriting the complete workflow.
-
-Simulation can validate the method and interfaces without implying direct
-transfer of one trained model to the physical robot. Decide explicitly whether
-simulation data, model weights, or only software interfaces will be reused.
-
-\section{What should remain reproducible}
-
-For every dataset, training run, and evaluation, record at least:
-
-\begin{itemize}
-  \item exact code version (the result of \filepath{git rev-parse HEAD}) and
-  configuration values used for the run;
-  \item task definition and object-pose range;
-  \item camera placement, crop, resolution, and exposure mode;
-  \item robot start state and control mode;
-  \item observation and action definitions;
-  \item number of accepted demonstrations;
-  \item selected checkpoint and deployment parameters;
-  \item individual evaluation trials, not only the final percentage.
-\end{itemize}
-
-The exact command is part of the experiment. A checkpoint filename alone is
-insufficient because horizons, camera preprocessing, action convention, and
-safety limits may be supplied at runtime.
-
-\begin{checkpointbox}[Before continuing]
-Write a one-page benchmark protocol and draw the observation/action interface.
-If success, variation, and action semantics are still ambiguous, do not begin a
-large data collection.
+\begin{checkpointbox}[Local pre-flight]
+The repository is complete, \filepath{microwave_dp} activates without an
+error, and Python can import MuJoCo, OpenCV, NumPy, Pinocchio, ROS~2, and the
+local \filepath{diffusion_policy} package.
 \end{checkpointbox}

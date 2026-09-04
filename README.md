@@ -69,10 +69,10 @@ New interns should start with the complete internal handover manual:
 - [Read the compiled tutorial](docs/internal_tutorial/main.pdf)
 - [Open the modular LaTeX sources and build instructions](docs/internal_tutorial/README.md)
 
-It presents a model-independent workflow for benchmark definition, MuJoCo
-validation, teleoperation, dataset collection, shared-server training, staged
-robot deployment, safety, and evaluation. Appendix A contains the complete
-Touch/OpenHaptics installation.
+It first explains MuJoCo through a runnable MJCF/Python example, then follows
+the implemented workflow through simulated teleoperation, demonstration
+recording, server training, and policy deployment. Appendix A contains the
+complete Touch/OpenHaptics installation.
 
 ## Installation
 

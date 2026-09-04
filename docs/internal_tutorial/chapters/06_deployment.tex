@@ -1,157 +1,67 @@
-\chapter{Deploying a Policy on a Robot}
+\section{Deploy the Checkpoint in MuJoCo}
 \label{chap:deployment}
 
-Deployment connects a statistical model to a safety-critical dynamical system.
-Treat it as an interface and validation problem, not as one command that changes
-\filepath{device=cpu} to \filepath{device=cuda}.
+Always execute a simulation checkpoint in MuJoCo before considering physical
+deployment. Copy it to \filepath{data/checkpoints/}, activate the local
+environment, and run:
 
-\section{Implement a robot adapter}
+\begin{lstlisting}[language=bash]
+cd "$HOME/Stage_Lirmm/Diffusion-model-isaacsim"
+conda activate microwave_dp
 
-For a new robot, isolate four responsibilities:
+python -m dp_mujoco.policy_exec.run_diffusion_mujoco \
+  --checkpoint data/checkpoints/<simulation_model>.ckpt \
+  --device cpu \
+  --policy_hz 10 \
+  --exec_horizon 8 \
+  --debug_timing
+\end{lstlisting}
 
-\begin{enumerate}
-  \item build observations in the exact training format;
-  \item load normalization and run the policy;
-  \item decode predicted actions into Cartesian or joint targets;
-  \item enforce low-level control limits and stop conditions.
-\end{enumerate}
+The runner builds the same camera/state observations as training, asks the
+policy for a future action sequence, executes a prefix, and replans. Use
+\filepath{--help} to inspect model-path, camera, controller, smoothing, timing,
+and trajectory-recording options.
 
-The policy should not directly open sockets, read cameras, or implement robot
-kinematics. A robot-specific adapter makes it possible to reuse the same policy
-runner and replace only state acquisition and command execution.
-
-\begin{projectbox}[UR10 implementation]
-\filepath{ur10_real_robot/policy_exec/} contains the observation builder and
-real runner. The backend reads UR10 state, two RealSense cameras, and gripper
-width; a Pinocchio Cartesian servo converts pose targets to bounded joint
-velocities; the gripper uses a Modbus adapter.
-\end{projectbox}
-
-\section{Deploy in stages}
-
-Never begin with unrestricted physical motion. Use at least these stages:
-
-\begin{description}
-  \item[1. Offline/fake:] load the checkpoint, create correctly shaped dummy
-  observations, and inspect predicted actions.
-  \item[2. Real observations, no motion:] connect cameras and state readers,
-  run inference, and print targets while commands remain disabled.
-  \item[3. Low-speed physical motion:] use conservative limits, one object pose,
-  a clear workspace, and an operator ready to stop.
-  \item[4. Frozen evaluation:] fix checkpoint and parameters, then execute the
-  written protocol.
-\end{description}
-
-At each stage, compare current observations with training data and verify units,
-frames, quaternion order, TCP offset, action horizon, and gripper convention.
-
-\section{Synchronous and asynchronous inference}
-
-If inference is slower than action execution, synchronous replanning causes the
-robot to pause while each new sequence is predicted. Asynchronous execution can
-hide this delay:
-
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=0.96\textwidth]{asynchronous_inference_timeline.png}
-  \caption{Asynchronous receding-horizon execution. The current buffered plan
-  continues while the next plan is computed, then execution switches when the
-  new plan is ready.}
-  \label{fig:async-manual}
-\end{figure}
-
-This improves continuity but does not remove latency. The new plan is based on
-an observation captured before inference began, so it may already be stale when
-execution starts. Faster robot motion, longer inference, and contact-rich tasks
-increase this mismatch.
-
-Measure:
+Before judging model quality, verify:
 
 \begin{itemize}
-  \item policy inference latency and its variance;
-  \item age of the observation used for each plan;
-  \item remaining actions when a new plan becomes ready;
-  \item target discontinuity at plan switches;
-  \item camera and control-loop delays separately.
+  \item the correct MuJoCo scene and checkpoint are loaded;
+  \item observation keys, image order, and image size match training;
+  \item the action frame, quaternion order, scale, and gripper convention match;
+  \item the reset distribution is the same one used during collection;
+  \item inference time is compatible with the chosen action execution rate.
 \end{itemize}
 
-Possible improvements include a deployment accelerator, a smaller model, a
-faster valid decoder or sampler, temporal ensembling, latency-aware action
-selection, and blending compatible plan transitions. Revalidate behavior after
-changing model-specific inference settings.
+If the robot immediately moves toward an implausible pose, stop the runner and
+check the interface before changing gains. A wrong quaternion convention or
+normalizer can look like a controller problem.
 
-\section{Parameters have different responsibilities}
+\section{Optional Physical-Robot Deployment}
+\label{sec:physical-deployment}
 
-Do not tune every parameter as a generic ``speed'' control.
+The physical runner is intentionally separate from MuJoCo. It must recreate the
+training observation interface using real cameras and robot state, then decode
+actions through a robot-specific controller. The maintained UR10 wrapper is:
 
-\begin{table}[H]
-  \centering
-  \caption{Main deployment parameter groups.}
-  \begin{tabularx}{\textwidth}{@{}p{0.32\textwidth}X@{}}
-    \toprule
-    \textbf{Group} & \textbf{What it controls} \\
-    \midrule
-    Model decoding/sampling & Computation cost and output approximation. \\
-    Action/execution horizon & How long one prediction is consumed before replacement. \\
-    Action execution rate & Time spacing between buffered targets. \\
-    Cartesian gains & How aggressively tracking error is corrected. \\
-    Target smoothing & Discontinuity/noise versus response lag. \\
-    Joint and Cartesian limits & Maximum physical motion allowed by software. \\
-    Position/rotation stop thresholds & Maximum discrepancy accepted before stopping. \\
-    Teach-pendant slider & Hardware-level scaling of physical speed. \\
-    \bottomrule
-  \end{tabularx}
-\end{table}
+\begin{center}
+\filepath{ur10_real_robot/run_diffusion_real.sh}
+\end{center}
 
-Record both requested software limits and the teach-pendant slider. Two runs
-with the same command but different slider values are not the same execution
-condition.
+Follow the staged commands in \filepath{README_CODE.md}: first load the model
+with fake inputs, then use real observations with motion disabled, and only
+then enable low-speed motion. Compare live camera images with the dataset before
+moving the robot.
 
-\section{Safety stops should latch and explain themselves}
+On the project laptop, inference can be slower than the 10~Hz action execution
+rate. The real runner can therefore execute a buffered plan while the next plan
+is computed asynchronously. This reduces pauses but the new plan is based on an
+older observation; inference latency and robot speed must still be measured and
+kept compatible.
 
-A stop should cancel motion, prevent the same invalid target from being sent
-repeatedly, and print enough context to diagnose the cause. Useful checks include:
-
-\begin{itemize}
-  \item target position and orientation error;
-  \item joint velocity and workspace limits;
-  \item stale camera or robot state;
-  \item excessive control-loop time;
-  \item loss of robot or gripper communication;
-  \item invalid or non-finite policy output.
-\end{itemize}
-
-Do not increase a threshold only because it interrupts a trial. First determine
-whether the large error comes from a wrong frame, quaternion, delayed plan,
-unreachable target, or genuine tracking lag.
-
-\section{Camera and gripper behavior during deployment}
-
-Use the same camera order, crop, resolution, and exposure strategy as training.
-Warm up cameras before the first observation and reject stale frames. If the
-scene requires auto-exposure, give the camera time to adapt in both
-demonstrations and deployment.
-
-Decode the gripper action using the same semantics used during recording. Log
-raw policy output, post-processing, command sent, target width, and measured
-width. This distinguishes policy hesitation from actuator delay or contact.
-
-\section{Use a staged execution wrapper}
-
-The repository wrapper \filepath{ur10_real_robot/run_diffusion_real.sh}
-defaults to motion disabled and requires an explicit motion-enable confirmation.
-Its validated project commands are in \filepath{README_CODE.md}. A new robot
-adapter should expose equivalent fake, observation-only, and physical-motion
-stages.
-
-\begin{safetybox}[Learned policy execution]
-A successful checkpoint load does not imply a safe target. Keep independent
-software limits, robot safety configuration, low initial speed, an unobstructed
-workspace, and an operator able to stop motion immediately.
+\begin{safetybox}[Physical execution]
+Never execute an unknown checkpoint first with motion enabled. Keep independent
+position, orientation, velocity, and timing stops; begin with a low
+teach-pendant slider; clear the workspace; and keep an operator beside the
+emergency stop. A safety stop is evidence to diagnose, not a threshold to raise
+automatically.
 \end{safetybox}
-
-\begin{checkpointbox}[Ready for evaluation]
-The selected checkpoint and command are frozen; camera images match the dataset;
-timing has been measured; repeated low-speed trials show bounded tracking; and
-every stop condition has been tested or reviewed.
-\end{checkpointbox}

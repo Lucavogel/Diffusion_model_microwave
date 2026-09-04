@@ -1,116 +1,79 @@
-\section{Train and Select a Model on Shared Compute}
+\chapter{Train and Deploy the Policy}
 \label{chap:training}
 
-Training should begin only after the dataset interface has been frozen and a
-small end-to-end smoke test has succeeded. The goal of the server workflow is
-not merely to obtain a checkpoint; it is to preserve enough information to
-reproduce how that checkpoint was produced.
+Training is the only stage normally run on the GPU server. The exact Docker,
+transfer, and training commands are maintained in \filepath{README_SERVER.md};
+use that guide rather than reconstructing an old terminal history.
 
-\subsection{Freeze one training configuration}
+\section{Keep the Four Execution Contexts Distinct}
 
-Record the following before launching a long run:
+\begin{table}[H]
+  \centering
+  \begin{tabularx}{\textwidth}{@{}p{0.25\textwidth}X@{}}
+    \toprule
+    \textbf{Context} & \textbf{Typical work} \\
+    \midrule
+    Local experiment PC & Collect, replay, and validate the Zarr dataset. \\
+    GPU server host & Store the transferred project and start or enter Docker. \\
+    Docker container & Activate \filepath{robodiff} and run training from \filepath{/workspace}. \\
+    Local deployment PC & Load and execute the copied checkpoint in MuJoCo or on the robot. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
 
-\begin{itemize}
-  \item dataset path and episode count;
-  \item observation keys, shapes, and preprocessing;
-  \item action representation and horizons;
-  \item model architecture and parameter count;
-  \item optimizer, learning rate, scheduler, batch size, and seed;
-  \item train/validation split by episode;
-  \item number of epochs and checkpoint interval;
-  \item software revision and training device.
-\end{itemize}
+The path \filepath{/workspace} exists only inside the container. Commands that
+fail with a missing \filepath{/workspace} on the local PC are being run in the
+wrong context.
 
-For a new model, first train for only a few batches and load the resulting
-checkpoint in the policy runner. This verifies configuration composition,
-tensor shapes, normalization, and serialization before consuming hours of GPU
-time.
-
-\subsection{Keep execution contexts explicit}
-
-Distinguish the local experiment PC, server host, container, and Python
-environment. Many path and import errors come from running a correct command in
-the wrong context; for example, \filepath{/workspace} exists inside the project
-container, not on the local robot computer.
-
-\subsection{A general server workflow}
+\section{Minimal Training Sequence}
 
 \begin{enumerate}
-  \item Validate the dataset and record the source revision.
-  \item Transfer only the required source, configuration, and data.
-  \item Use a persistent session and a documented container/environment.
-  \item Print resolved paths and run a short smoke test.
-  \item Monitor the run and copy model candidates with their configurations
-  back to the deployment computer.
+  \item Check the final local dataset and stop editing it.
+  \item Transfer that dataset, the matching task/training YAML files, and the
+  source required by the selected model.
+  \item Enter the persistent Docker container and activate \filepath{robodiff}.
+  \item Print the dataset path inside Docker and pass it explicitly as
+  \filepath{task.dataset_path}.
+  \item Launch the matching training configuration inside a \filepath{tmux}
+  session and monitor GPU use with \filepath{nvidia-smi}.
+  \item Copy several checkpoint candidates back to
+  \filepath{data/checkpoints/} on the local PC.
 \end{enumerate}
 
-Use a persistent container or a documented image. Installing arbitrary packages
-interactively until an import works makes the next run difficult to reproduce.
+For a MuJoCo dataset recorded by this guide, the matching configurations are
+\filepath{train_e_waste} and \filepath{e_waste_image}. After following the
+container and configuration-copy steps in \filepath{README_SERVER.md}, launch
+this example from inside Docker:
 
-\subsection{Example: LIRMM training setup}
+\begin{lstlisting}[language=bash]
+cd /workspace
+source /opt/conda/etc/profile.d/conda.sh
+conda activate robodiff
 
-\begin{projectbox}[Internship example]
-Training ran on \filepath{mic-gpu1} inside a persistent Docker container using
-one NVIDIA A100 GPU. Data and configurations were transferred with
-\filepath{rsync}; \filepath{tmux} protected the run from SSH disconnection. An
-absolute dataset path was supplied explicitly, and the trained model was loaded
-on the local CPU before robot testing. Exact server and training commands are in
-\filepath{README_SERVER.md}.
-\end{projectbox}
+DATASET_NAME="<simulation_dataset>.zarr"
 
-\subsection{What to monitor}
+python /workspace/diffusion_policy/train.py \
+  --config-name=train_e_waste \
+  task=e_waste_image \
+  task.dataset_path="/workspace/data/datasets/$DATASET_NAME" \
+  training.resume=False \
+  training.device=cuda:0 \
+  logging.mode=disabled \
+  logging.resume=False
+\end{lstlisting}
 
-Monitor several signals rather than one number:
+For another task or model, replace both configuration names together. The task
+YAML must describe exactly the recorded keys, image sizes, state
+dimensions, action dimensions, and horizons. A checkpoint trained with a real
+dataset configuration must not be tested with the simulation interface, or the
+reverse.
 
-\begin{description}
-  \item[Training loss:] confirms that the optimizer can fit the demonstrations.
-  \item[Validation loss:] detects generalization degradation on held-out episodes.
-  \item[Action error or samples:] helps reveal one problematic action component.
-  \item[GPU use and step time:] reveals data-loader, memory, or device problems.
-  \item[Closed-loop rollouts:] measure the behavior that ultimately matters.
-\end{description}
+Select a few checkpoints around the best validation region and test them under
+the same conditions. Validation loss is useful for identifying overfitting, but
+the final choice must also produce stable closed-loop behavior.
 
-The first Zarr load may be slow because chunks are decompressed and cached. A
-pause after model construction is not proof that training has frozen; inspect
-CPU, disk, GPU, and process activity before interrupting it.
-
-\subsection{Select model candidates}
-
-Save model candidates often enough to observe overfitting. Validation loss may
-reach its minimum early, while closed-loop performance does not always rank
-candidates in exactly the same order.
-
-A sensible selection procedure is:
-
-\begin{enumerate}
-  \item reject runs with unstable or inconsistent training;
-  \item choose a small set around the best validation region;
-  \item benchmark inference time and load each checkpoint locally;
-  \item test candidates in simulation or a no-motion real stage;
-  \item choose one checkpoint before the reported evaluation trials.
-\end{enumerate}
-
-Do not change the selected model during the final evaluation. Development
-trials and evaluation trials have different roles.
-
-\subsection{Typical failures}
-
-\begin{longtable}{@{}p{0.29\textwidth}p{0.65\textwidth}@{}}
-  \toprule
-  \textbf{Symptom} & \textbf{First checks} \\
-  \midrule
-  \endhead
-  Dataset not found & Print the path inside the container; verify mount, transfer location, and Hydra-resolved value. \\
-  CUDA out of memory & Check other processes, selected GPU, batch size, workers, image resolution, and model size. \\
-  Training appears frozen & Inspect first-load caching, disk activity, workers, shared memory, and GPU utilization. \\
-  Loss becomes NaN & Check normalization, invalid actions, learning rate, mixed precision, and exploding gradients. \\
-  Validation rises early & Check split size, dataset diversity, augmentation, checkpoint frequency, and overfitting. \\
-  Checkpoint fails locally & Check source revision, policy class, preprocessing, dependency compatibility, and EMA loading. \\
-  \bottomrule
-\end{longtable}
-
-\begin{checkpointbox}[Training output]
-For every candidate checkpoint, keep the resolved configuration, dataset name,
-Git revision, epoch, validation metrics, parameter count, and a measured
-inference latency on the deployment computer.
+\begin{checkpointbox}[Checkpoint ready]
+The checkpoint loads on the local PC, its dataset and resolved configuration
+are known, and its observation/action interface matches the runner that will
+execute it.
 \end{checkpointbox}

@@ -1,10 +1,33 @@
-\chapter{From Data to a Trained Model}
+\chapter{Record and Check Demonstrations}
 \label{chap:data}
 
-The dataset is the contract between teleoperation, training, and deployment.
-Most difficult bugs in this transition are not neural-network bugs; they are
-differences in key names, image order, normalization, coordinates, quaternion
-convention, timing, or action semantics.
+The MuJoCo teleoperation program records complete task attempts as episodes in a
+Zarr dataset. Recording and control occur in the same program, so the saved
+images, measured state, and demonstrated target share one timeline.
+
+\section{Record Episodes}
+
+Start \filepath{./launch_all.sh} as described in \cref{chap:touch}. The MuJoCo
+window uses these controls:
+
+\begin{table}[H]
+  \centering
+  \begin{tabular}{@{}ll@{}}
+    \toprule
+    \textbf{Key} & \textbf{Action} \\
+    \midrule
+    \filepath{Space} & Start recording; press again to stop and save the episode. \\
+    \filepath{Backspace} & Cancel the current episode without saving it. \\
+    \filepath{R} & Reset the robot and randomize the scene. \\
+    \filepath{Esc} & Quit. \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+The recorder creates a timestamped dataset under \filepath{data/datasets/} and
+samples at 10~Hz. Practice before recording. Start just before useful motion,
+finish after task completion, and cancel failed, interrupted, or corrupted
+attempts rather than teaching them as intended behavior.
 
 \section{Define one synchronized sample}
 
@@ -16,13 +39,9 @@ A visuomotor sample normally contains:
   \text{demonstrated command}_t\right).
 \end{equation}
 
-An episode is an ordered sequence of these samples from one task attempt. Do
-not concatenate unrelated attempts without episode boundaries; training windows
-must not cross from the end of one trial into the start of another.
-
-The recorder should define which timestamp each field represents. For a slow
-10 Hz dataset, a camera frame that is several hundred milliseconds older than
-the action may already create a misleading label near contact.
+An episode is the ordered sequence from one start/stop interval. Episode
+boundaries must remain intact because a training window must never cross from
+the end of one attempt into the reset of the next.
 
 \section{Define and document the schema}
 
@@ -31,13 +50,13 @@ stored the following Zarr arrays at 10 Hz:
 
 \begin{table}[H]
   \centering
-  \caption{Real dataset interface used during the internship.}
+    \caption{MuJoCo dataset interface used by the project recorder.}
   \begin{tabularx}{\textwidth}{@{}p{0.34\textwidth}p{0.20\textwidth}X@{}}
     \toprule
     \textbf{Key} & \textbf{Per-step shape} & \textbf{Meaning} \\
     \midrule
-    \filepath{agentview_image} & $240\times320\times3$ & Global RGB image. \\
-    \filepath{robot0_eye_in_hand_image} & $240\times320\times3$ & Wrist RGB image. \\
+    \filepath{agentview_image} & $84\times84\times3$ & Global RGB image. \\
+    \filepath{robot0_eye_in_hand_image} & $84\times84\times3$ & Wrist RGB image. \\
     \filepath{robot0_eef_pos} & 3 & Measured end-effector position. \\
     \filepath{robot0_eef_quat} & 4 & Measured end-effector quaternion. \\
     \filepath{robot0_gripper_qpos} & 1 & Measured gripper opening/state. \\
@@ -46,118 +65,54 @@ stored the following Zarr arrays at 10 Hz:
   \end{tabularx}
 \end{table}
 
-The real action was
+The simulation action is
 
 \begin{equation}
-  a_t=[x,y,z,q_w,q_x,q_y,q_z,g].
+  a_t=[x,y,z,q_x,q_y,q_z,q_w,g].
 \end{equation}
 
-Dimension alone is insufficient compatibility evidence: coordinate frames,
-units, quaternion order, and action meaning must also match.
-
-\section{Choose state and action according to causality}
-
-The observation should describe what was measured before the command. The
-action should describe what the demonstrator intended the robot to do next.
-This distinction is important for slow actuators:
-
-\begin{itemize}
-  \item measured gripper width belongs in the observation;
-  \item commanded open/narrow/grasp state belongs in the action;
-  \item delayed measured motion should not replace the intended command label.
-\end{itemize}
-
-Apply the same reasoning to target pose versus measured pose. If the action is a
-Cartesian target, record that target consistently during collection and decode
-it the same way during execution.
-
-\section{Temporal windows and horizons}
-
-Sequence policies use several time scales:
-
-\begin{description}
-  \item[Observation horizon $T_o$:] recent samples supplied as context.
-  \item[Prediction horizon $T_p$:] complete future sequence predicted by the model.
-  \item[Action horizon $T_a$:] prefix executed before replanning.
-\end{description}
-
-For a sequence policy, predicting farther than execution can encourage a
-coherent future while replanning limits the use of increasingly old
-predictions. Record all three horizons with the model configuration.
-
-These horizons are part of the model interface. Changing them may require a new
-configuration or checkpoint rather than only a command-line flag.
+The quaternion stored in the action is \filepath{xyzw}; the measured
+\filepath{robot0_eef_quat} observation is \filepath{wxyz}. This project-specific
+difference is handled by the current recorder and runner, but must not be
+silently changed or mixed with real-robot datasets.
 
 \section{Inspect structure, content, and coverage}
 
-Dataset validation should occur in three passes.
+Validate every new dataset before sending it to the training server.
 
-\subsection{Structural checks}
-
-Confirm episode count, array lengths, dtypes, action dimension, image shapes,
-and absence of incomplete chunks. In this repository:
+First confirm episode count, equal array lengths, action dimension, image
+shapes, and valid Zarr structure:
 
 \begin{lstlisting}[language=bash]
 python scripts/check_zarr.py data/datasets/<dataset>.zarr
 \end{lstlisting}
 
-\subsection{Visual and trajectory replay}
-
-Replay every episode, not only random images:
+Then replay every episode and inspect the robot trajectory:
 
 \begin{lstlisting}[language=bash]
 python scripts/replay_zarr.py data/datasets/<dataset>.zarr --scale 2
 python scripts/traj_zarr.py data/datasets/<dataset>.zarr
 \end{lstlisting}
 
-Look for frozen cameras, repeated frames, occlusion at the decision point,
-sudden action jumps, long idle segments, wrong gripper transitions, and recovery
-motions that are not intended behavior.
+Look for frozen or repeated images, long idle intervals, abrupt target jumps,
+unintended corrective loops, incorrect gripper transitions, and actions that
+cannot be explained from the recorded observations. Also verify that object
+positions and orientations cover the range expected during policy execution.
 
-\subsection{Coverage checks}
-
-A collection can contain only good demonstrations and still be a poor dataset.
-Plot or tabulate initial position, orientation, task zone, object identity, and
-lighting condition. The distribution should cover the evaluation protocol
-rather than accidentally overrepresenting the easiest location.
-
-\begin{methodbox}[Use data inspection to redesign collection]
-When a policy repeatedly misses one region, first check whether that region is
-visible and sufficiently represented. Additional targeted demonstrations may
-be more useful than changing architecture or training for more epochs.
+\begin{methodbox}[Demonstration quality]
+A successful episode is not automatically a good demonstration. Keep motions
+deliberate and consistent, avoid hiding the object at critical moments, and
+cancel an episode when the operator makes a correction that should not be
+imitated. Record three episodes first and inspect all of them before continuing
+with a long session.
 \end{methodbox}
 
-\section{Compare deployment observations with training data}
-
-Before executing a trained model after the setup has moved, compare live camera
-images with recorded images. This repository provides:
-
-\begin{lstlisting}[language=bash]
-PYTHONPATH=. python scripts/compare_live_camera_to_zarr.py \
-  data/datasets/<dataset>.zarr \
-  --wrist-camera-config <matching_camera_config.json>
-\end{lstlisting}
-
-The views do not need to be pixel-identical, but camera geometry, crop,
-workspace position, and illumination should be close. A moved table or camera
-can create a larger distribution shift than a change in neural-network loss.
-
-\section{Training, validation, and evaluation data}
-
-Split by complete episodes, never by individual frames. Adjacent frames from
-one trajectory are highly correlated; placing some in training and some in
-validation gives an overly optimistic metric.
-
-Validation loss is useful for detecting optimization problems and overfitting,
-but it does not directly measure closed-loop recovery. Select final candidates
-using held-out metrics and controlled rollouts, then freeze one model before
-the reported evaluation.
-
-\section{Acceptance checklist before training}
+Keep the original dataset immutable after training begins. If episodes must be
+removed or new demonstrations added, create a new named version so that each
+checkpoint can still be linked to the data that produced it.
 
 \begin{checkpointbox}[Interface freeze]
-Confirm shapes and episode boundaries, replay every accepted episode, document
-camera and coordinate conventions, verify action semantics and coverage, then
-point the task configuration to this exact dataset. Keep one interface table for
-both training and deployment.
+The structure checker passes, every accepted episode has been replayed, camera
+frames remain live, actions match operator intent, and the demonstrated pose
+range matches the task that will be tested.
 \end{checkpointbox}

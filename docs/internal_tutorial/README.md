@@ -1,25 +1,26 @@
-# Practical Visuomotor Robot-Learning Workflow
+# MuJoCo Simulation Tutorial
 
 This directory builds an internal handover manual for future LIRMM students:
 
-> **Practical Workflow for Testing Visuomotor Robot Learning Systems**
+> **MuJoCo Simulation Tutorial: Teleoperation, Data Recording, and Policy Deployment**
 
 The intended reader knows the basics of Python, machine learning, ROS, and
-robotics, but may not yet have run a complete learning-based manipulation
-experiment. The manual explains a reusable methodology rather than prescribing
-one exact model or robot. Luca Vogelgesang's Diffusion Policy project is used as
-a concrete example throughout.
+robotics, but may not yet have run this project. The manual stays close to the
+implemented workflow and points to the maintained README files for exact
+commands.
 
-The five chapters cover:
+The four chapters cover:
 
-1. benchmark definition, interfaces, and MuJoCo validation;
-2. teleoperation and demonstration recording;
-3. dataset interfaces, training, and model selection;
-4. staged physical deployment and safety;
-5. evaluation, diagnosis, and iteration.
+1. understanding MuJoCo through a runnable example, then preparing and
+   validating the project scene;
+2. teleoperating the simulated robot with the Touch;
+3. recording, replaying, and checking demonstrations;
+4. training a checkpoint and deploying it first in simulation, then optionally
+   on a physical robot.
 
 Appendix A provides the complete Touch/OpenHaptics installation. Exact project
 commands remain in `README_ENV.md`, `README_SERVER.md`, and `README_CODE.md`.
+The runnable MuJoCo introduction is stored in `dp_mujoco/examples/`.
 
 The source is split into chapters for maintenance, while the deliverable is one
 searchable PDF.
