@@ -1,8 +1,9 @@
-# MuJoCo Simulation Tutorial
+# Robotic Manipulation Workflow
 
 This directory builds an internal handover manual for future LIRMM students:
 
-> **MuJoCo Simulation Tutorial: Teleoperation, Data Recording, and Policy Deployment**
+> **Robotic Manipulation Workflow: MuJoCo Simulation, Teleoperation, Data
+> Recording, Training, and Policy Deployment**
 
 The intended reader knows the basics of Python, machine learning, ROS, and
 robotics, but may not yet have run this project. The manual stays close to the
@@ -37,8 +38,8 @@ Clean generated LaTeX files:
 latexmk -C main.tex
 ```
 
-The expected output is [`main.pdf`](main.pdf). Update the version and reference
-Git commit on the title/front-matter pages when procedures or interfaces change.
+The expected output is [`main.pdf`](main.pdf). Update the version and date on
+the title page when procedures or interfaces change.
 
 The PDF is intentionally kept in the repository so a new intern can read the
 manual before installing LaTeX. Generated auxiliary files are ignored.

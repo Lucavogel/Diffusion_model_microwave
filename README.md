@@ -64,7 +64,7 @@ ur10_real_robot/   Real UR10 teleoperation, cameras, gripper, and policy executi
 
 ## Internal Technical Handover
 
-New interns should start with the complete internal handover manual:
+New interns should start with the complete practical handover guide:
 
 - [Read the compiled tutorial](docs/internal_tutorial/main.pdf)
 - [Open the modular LaTeX sources and build instructions](docs/internal_tutorial/README.md)
