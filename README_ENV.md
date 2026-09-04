@@ -65,18 +65,18 @@ Use Ubuntu 22.04 and Python 3.10 unless the complete stack has been tested again
 | Intel RealSense SDK | 2.58.x |
 | OpenHaptics SDK | 3.4 |
 | Git branch | `main` |
-| Reference Git commit | `be25f30da3208d579aa3c58cda6166287745f57b` |
+| Source revision | Record the current value with `git rev-parse HEAD` |
 
-The Git commit identifies the exact version of the source code. Display the
-version currently checked out with:
+The Git commit identifies the exact version of the source code used for an
+experiment. Display the version currently checked out with:
 
 ```bash
 git branch --show-current
 git rev-parse HEAD
 ```
 
-Do not blindly return to the reference commit if newer work has been pushed.
-Record the commit used for each experiment so that the result can be reproduced.
+Use the latest reviewed revision on `main`, and record its commit for each
+experiment so that the result can be reproduced.
 
 ## 4. Install the Ubuntu Packages
 
